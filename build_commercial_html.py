@@ -2380,6 +2380,8 @@ html_template = '''<!DOCTYPE html>
         },
         { enableHighAccuracy: true, timeout: 8000 }
       );
+    };
+
     // --- Mobile Advanced Filters Toggle ---
     window.toggleAdvancedFilters = function() {
       const box = document.getElementById('advancedFiltersBox');
