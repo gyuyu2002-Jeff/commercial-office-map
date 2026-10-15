@@ -1,0 +1,306 @@
+# -*- coding: utf-8 -*-
+"""
+全台商辦＆企業地圖 · 全國商業大樓與辦公室資料庫生成器
+涵蓋台灣主要商務都會區：台北、新北、桃園、新竹、台中、台南、高雄等
+排除沿街小吃、飲料店、美容美髮、汽機車修護、洗衣等店面。
+聚焦：IT資訊軟體、金融保險、建築工程事務所、跨國貿易、專業諮詢會計法律、以及四大邊界金礦（商務中心、牙醫醫美診所、連鎖餐飲營運總部、海空運物流總部）。
+"""
+
+import json
+import random
+import os
+import sys
+
+if hasattr(sys.stdout, 'reconfigure'):
+    sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+
+random.seed(42)
+
+COUNTIES = {
+    "taipei": {
+        "id": "taipei", "name": "臺北市", "icon": "🏛️", "region": "北部",
+        "center": [25.0339, 121.5645], "zoom": 14,
+        "districts": [
+            {"id": "tp_xinyi", "name": "信義計畫區", "icon": "👑", "center": [25.0350, 121.5670], "zoom": 16},
+            {"id": "tp_dunhua", "name": "敦南敦北金融特區", "icon": "🏦", "center": [25.0530, 121.5490], "zoom": 16},
+            {"id": "tp_neihu", "name": "內湖科技商辦聚落", "icon": "💻", "center": [25.0780, 121.5740], "zoom": 15},
+            {"id": "tp_nangang", "name": "南港軟體經貿特區", "icon": "🚀", "center": [25.0590, 121.6150], "zoom": 16},
+            {"id": "tp_zhongshan", "name": "南京松江商貿特區", "icon": "💼", "center": [25.0515, 121.5330], "zoom": 16}
+        ]
+    },
+    "new_taipei": {
+        "id": "new_taipei", "name": "新北市", "icon": "🏙️", "region": "北部",
+        "center": [25.0125, 121.4650], "zoom": 13,
+        "districts": [
+            {"id": "nt_banqiao", "name": "新板特區經貿核心", "icon": "🌟", "center": [25.0130, 121.4640], "zoom": 16},
+            {"id": "nt_xinzhuang", "name": "新莊副都心CBD", "icon": "🏢", "center": [25.0580, 121.4500], "zoom": 16},
+            {"id": "nt_zhonghe", "name": "中和遠東世紀園區", "icon": "🏭", "center": [24.9980, 121.4880], "zoom": 16},
+            {"id": "nt_xindian", "name": "新店矽谷科技商辦", "icon": "💡", "center": [24.9850, 121.5380], "zoom": 16},
+            {"id": "nt_xizhi", "name": "汐止經貿U-TOWN", "icon": "🚅", "center": [25.0600, 121.6500], "zoom": 16}
+        ]
+    },
+    "taoyuan": {
+        "id": "taoyuan", "name": "桃園市", "icon": "✈️", "region": "北部",
+        "center": [24.9936, 121.3010], "zoom": 13,
+        "districts": [
+            {"id": "ty_art", "name": "藝文/經國CBD", "icon": "👑", "center": [25.0165, 121.3005], "zoom": 16},
+            {"id": "ty_station", "name": "桃園站前金融商圈", "icon": "🏦", "center": [24.9892, 121.3135], "zoom": 16},
+            {"id": "ty_qingpu", "name": "青埔高鐵經貿特區", "icon": "🚅", "center": [25.0125, 121.2150], "zoom": 16},
+            {"id": "ty_guishan", "name": "龜山長庚A8生醫商辦", "icon": "🩺", "center": [25.0595, 121.3685], "zoom": 16},
+            {"id": "ty_luzhu", "name": "南崁航運物流CBD", "icon": "🚢", "center": [25.0450, 121.2940], "zoom": 16}
+        ]
+    },
+    "hsinchu": {
+        "id": "hsinchu", "name": "新竹縣市", "icon": "🔬", "region": "北部",
+        "center": [24.8150, 121.0250], "zoom": 13,
+        "districts": [
+            {"id": "hc_zhubei", "name": "竹北高鐵經貿CBD", "icon": "🚅", "center": [24.8080, 121.0400], "zoom": 16},
+            {"id": "hc_guangfu", "name": "新竹光復金融廊帶", "icon": "💼", "center": [24.7950, 121.0020], "zoom": 16},
+            {"id": "hc_guanpu", "name": "關埔經貿特區", "icon": "🌟", "center": [24.7920, 121.0200], "zoom": 16}
+        ]
+    },
+    "taichung": {
+        "id": "taichung", "name": "臺中市", "icon": "🌇", "region": "中部",
+        "center": [24.1620, 120.6450], "zoom": 13,
+        "districts": [
+            {"id": "tc_7qi", "name": "七期新市政CBD", "icon": "👑", "center": [24.1610, 120.6430], "zoom": 16},
+            {"id": "tc_boulevard", "name": "台灣大道金融軸帶", "icon": "🏦", "center": [24.1550, 120.6620], "zoom": 16},
+            {"id": "tc_chongde", "name": "文心崇德新商辦圈", "icon": "📈", "center": [24.1720, 120.6850], "zoom": 16}
+        ]
+    },
+    "tainan": {
+        "id": "tainan", "name": "臺南市", "icon": "🏯", "region": "南部",
+        "center": [22.9980, 120.2150], "zoom": 13,
+        "districts": [
+            {"id": "tn_west", "name": "中西區站前金融商圈", "icon": "🏦", "center": [22.9950, 120.2080], "zoom": 16},
+            {"id": "tn_east", "name": "東區南紡商辦特區", "icon": "🌟", "center": [22.9900, 120.2320], "zoom": 16},
+            {"id": "tn_yongkang", "name": "永康工業轉型商辦CBD", "icon": "🏢", "center": [23.0250, 120.2450], "zoom": 16}
+        ]
+    },
+    "kaohsiung": {
+        "id": "kaohsiung", "name": "高雄市", "icon": "⚓", "region": "南部",
+        "center": [22.6250, 120.3050], "zoom": 13,
+        "districts": [
+            {"id": "kh_bay", "name": "亞洲新灣區經貿特區", "icon": "🌊", "center": [22.6110, 120.3010], "zoom": 16},
+            {"id": "kh_zhongzheng", "name": "中正金融金融廊帶", "icon": "🏦", "center": [22.6300, 120.3120], "zoom": 16},
+            {"id": "kh_zuoying", "name": "左營高鐵博愛特區", "icon": "🚅", "center": [22.6850, 120.3070], "zoom": 16}
+        ]
+    }
+}
+
+# Landmark Commercial Buildings by District
+LANDMARK_BUILDINGS = [
+    # --- 臺北市 (Taipei) ---
+    {"id": "BLD_TP_101", "name": "台北101金融大樓", "county_id": "taipei", "district_id": "tp_xinyi", "address": "台北市信義區信義路五段7號", "lat": 25.0339, "lng": 121.5645, "floors": 101, "tier": "A+"},
+    {"id": "BLD_TP_CATHAY", "name": "國泰置地廣場·信義", "county_id": "taipei", "district_id": "tp_xinyi", "address": "台北市信義區忠孝東路五段68號", "lat": 25.0410, "lng": 121.5670, "floors": 46, "tier": "A+"},
+    {"id": "BLD_TP_NANSHAN", "name": "台北南山廣場", "county_id": "taipei", "district_id": "tp_xinyi", "address": "台北市信義區松智路17號", "lat": 25.0352, "lng": 121.5668, "floors": 48, "tier": "A+"},
+    {"id": "BLD_TP_UNIPRES", "name": "統一國際大樓", "county_id": "taipei", "district_id": "tp_xinyi", "address": "台北市信義區松高路9號", "lat": 25.0395, "lng": 121.5658, "floors": 30, "tier": "A+"},
+    {"id": "BLD_TP_HONGTAI", "name": "宏泰世界大樓", "county_id": "taipei", "district_id": "tp_dunhua", "address": "台北市松山區民生東路三段168號", "lat": 25.0578, "lng": 121.5475, "floors": 24, "tier": "A"},
+    {"id": "BLD_TP_FED", "name": "遠企中心辦公大樓", "county_id": "taipei", "district_id": "tp_dunhua", "address": "台北市大安區敦化南路二段207號", "lat": 25.0272, "lng": 121.5488, "floors": 43, "tier": "A+"},
+    {"id": "BLD_TP_FUBON", "name": "富邦金融中心", "county_id": "taipei", "district_id": "tp_dunhua", "address": "台北市大安區仁愛路四段169號", "lat": 25.0382, "lng": 121.5495, "floors": 24, "tier": "A"},
+    {"id": "BLD_TP_METRO_NEIHU", "name": "大都會科技大樓", "county_id": "taipei", "district_id": "tp_neihu", "address": "台北市內湖區瑞光路513巷", "lat": 25.0795, "lng": 121.5682, "floors": 12, "tier": "A"},
+    {"id": "BLD_TP_TIMES_TECH", "name": "時代科技廣場", "county_id": "taipei", "district_id": "tp_neihu", "address": "台北市內湖區洲子街71號", "lat": 25.0812, "lng": 121.5710, "floors": 11, "tier": "A"},
+    {"id": "BLD_TP_NK_SOFT", "name": "南港軟體園區世貿大樓", "county_id": "taipei", "district_id": "tp_nangang", "address": "台北市南港區園區街3號", "lat": 25.0595, "lng": 121.6148, "floors": 20, "tier": "A"},
+    {"id": "BLD_TP_HN_HQ", "name": "華南金控總部大樓", "county_id": "taipei", "district_id": "tp_xinyi", "address": "台北市信義區松仁路123號", "lat": 25.0345, "lng": 121.5695, "floors": 27, "tier": "A+"},
+    {"id": "BLD_TP_NANJING_FUBON", "name": "富邦南京商貿大樓", "county_id": "taipei", "district_id": "tp_zhongshan", "address": "台北市中山區南京東路三段136號", "lat": 25.0518, "lng": 121.5420, "floors": 18, "tier": "A"},
+
+    # --- 新北市 (New Taipei) ---
+    {"id": "BLD_NT_FED_NEW", "name": "遠東新世紀板橋總部大樓", "county_id": "new_taipei", "district_id": "nt_banqiao", "address": "新北市板橋區新站路16號", "lat": 25.0135, "lng": 121.4655, "floors": 50, "tier": "A+"},
+    {"id": "BLD_NT_MANHATTAN", "name": "曼哈頓金融大樓", "county_id": "new_taipei", "district_id": "nt_banqiao", "address": "新北市板橋區文化路一段268號", "lat": 25.0190, "lng": 121.4650, "floors": 22, "tier": "A"},
+    {"id": "BLD_NT_JOYCE_IFC", "name": "中悅IFC國際金融中心", "county_id": "new_taipei", "district_id": "nt_xinzhuang", "address": "新北市新莊區中港路與副都心大道口", "lat": 25.0590, "lng": 121.4510, "floors": 30, "tier": "A+"},
+    {"id": "BLD_NT_FED_CENTURY", "name": "中和遠東世紀廣場 (A/B棟)", "county_id": "new_taipei", "district_id": "nt_zhonghe", "address": "新北市中和區連城路268號", "lat": 24.9985, "lng": 121.4885, "floors": 18, "tier": "A"},
+    {"id": "BLD_NT_SILICON", "name": "新店台北矽谷園區大樓", "county_id": "new_taipei", "district_id": "nt_xindian", "address": "新北市新店區北新路三段205號", "lat": 24.9855, "lng": 121.5385, "floors": 16, "tier": "A"},
+    {"id": "BLD_NT_UTOWN", "name": "汐止遠雄U-TOWN商辦特區", "county_id": "new_taipei", "district_id": "nt_xizhi", "address": "新北市汐止區新台五路一段99號", "lat": 25.0605, "lng": 121.6505, "floors": 37, "tier": "A+"},
+
+    # --- 桃園市 (Taoyuan) ---
+    {"id": "BLD_TY_WORLD_CENTER", "name": "中悅世界中心", "county_id": "taoyuan", "district_id": "ty_art", "address": "桃園市桃園區中正路1071號", "lat": 25.0162, "lng": 121.3003, "floors": 32, "tier": "A+"},
+    {"id": "BLD_TY_GLOBAL_HQ", "name": "中悅環球企業總部", "county_id": "taoyuan", "district_id": "ty_art", "address": "桃園市桃園區中正路1082號", "lat": 25.0175, "lng": 121.2995, "floors": 28, "tier": "A+"},
+    {"id": "BLD_TY_JINGGUO", "name": "經國亞洲商貿大樓", "county_id": "taoyuan", "district_id": "ty_art", "address": "桃園市桃園區經國路888號", "lat": 25.0280, "lng": 121.3075, "floors": 20, "tier": "A"},
+    {"id": "BLD_TY_STATION_FIN", "name": "新光三越金融經貿大樓", "county_id": "taoyuan", "district_id": "ty_station", "address": "桃園市桃園區中正路19號", "lat": 24.9895, "lng": 121.3130, "floors": 18, "tier": "A"},
+    {"id": "BLD_TY_QINGPU_CATHAY", "name": "國泰置地廣場·青埔", "county_id": "taoyuan", "district_id": "ty_qingpu", "address": "桃園市中壢區高鐵北路一段58號", "lat": 25.0135, "lng": 121.2155, "floors": 20, "tier": "A+"},
+    {"id": "BLD_TY_A8_MED", "name": "長庚國際生醫經貿大樓 (A8)", "county_id": "taoyuan", "district_id": "ty_guishan", "address": "桃園市龜山區復興一路8號", "lat": 25.0592, "lng": 121.3688, "floors": 18, "tier": "A"},
+    {"id": "BLD_TY_EVA_AIR", "name": "長榮航空企業全球總部", "county_id": "taoyuan", "district_id": "ty_luzhu", "address": "桃園市蘆竹區新南路一段376號", "lat": 25.0455, "lng": 121.2945, "floors": 16, "tier": "A+"},
+
+    # --- 新竹縣市 (Hsinchu) ---
+    {"id": "BLD_HC_WEISHUN", "name": "暐順經貿大樓 6+Plaza", "county_id": "hsinchu", "district_id": "hc_zhubei", "address": "新竹縣竹北市復興三路二段168號", "lat": 24.8085, "lng": 121.0405, "floors": 20, "tier": "A+"},
+    {"id": "BLD_HC_CATHAY_ZB", "name": "國泰置地廣場·竹北", "county_id": "hsinchu", "district_id": "hc_zhubei", "address": "新竹縣竹北市自強南路8號", "lat": 24.8140, "lng": 121.0280, "floors": 24, "tier": "A+"},
+    {"id": "BLD_HC_FENGYI_ED", "name": "豐邑E&D經貿中心", "county_id": "hsinchu", "district_id": "hc_zhubei", "address": "新竹縣竹北市光明六路東一段", "lat": 24.8210, "lng": 121.0250, "floors": 22, "tier": "A"},
+    {"id": "BLD_HC_GUANGFU", "name": "光復科技商務中心", "county_id": "hsinchu", "district_id": "hc_guangfu", "address": "新竹市東區光復路二段295號", "lat": 24.7960, "lng": 121.0010, "floors": 15, "tier": "A"},
+
+    # --- 臺中市 (Taichung) ---
+    {"id": "BLD_TC_LIANJU_ZHONGYONG", "name": "聯聚中雍大廈", "county_id": "taichung", "district_id": "tc_7qi", "address": "台中市西屯區市政北七路99號", "lat": 24.1645, "lng": 120.6405, "floors": 39, "tier": "A+"},
+    {"id": "BLD_TC_DINGSHENG_BHW", "name": "鼎盛BHW台灣財經中心", "county_id": "taichung", "district_id": "tc_7qi", "address": "台中市西屯區市政北二路236號", "lat": 24.1615, "lng": 120.6385, "floors": 36, "tier": "A+"},
+    {"id": "BLD_TC_FENGYI_SHIZHENG", "name": "豐邑市政核心大樓", "county_id": "taichung", "district_id": "tc_7qi", "address": "台中市西屯區市政路386號", "lat": 24.1575, "lng": 120.6415, "floors": 38, "tier": "A+"},
+    {"id": "BLD_TC_NTC", "name": "NTC國家商貿中心", "county_id": "taichung", "district_id": "tc_7qi", "address": "台中市西屯區市政北二路282號", "lat": 24.1605, "lng": 120.6360, "floors": 35, "tier": "A+"},
+    {"id": "BLD_TC_CTBC", "name": "中信金控台中旗艦金融大樓", "county_id": "taichung", "district_id": "tc_7qi", "address": "台中市西屯區惠中路一段88號", "lat": 24.1610, "lng": 120.6440, "floors": 28, "tier": "A+"},
+    {"id": "BLD_TC_TAIWAN_BLVD", "name": "順天經貿廣場", "county_id": "taichung", "district_id": "tc_boulevard", "address": "台中市西屯區文心路二段201號", "lat": 24.1565, "lng": 120.6495, "floors": 23, "tier": "A"},
+
+    # --- 臺南市 (Tainan) ---
+    {"id": "BLD_TN_CATHAY_ZD", "name": "國泰置地廣場·台南", "county_id": "tainan", "district_id": "tn_west", "address": "台南市中西區西門路一段658號", "lat": 22.9875, "lng": 120.1985, "floors": 22, "tier": "A+"},
+    {"id": "BLD_TN_SK_TOWER", "name": "新光三越商辦大樓", "county_id": "tainan", "district_id": "tn_west", "address": "台南市中西區中山路162號", "lat": 22.9960, "lng": 120.2105, "floors": 18, "tier": "A"},
+    {"id": "BLD_TN_TS_HQ", "name": "南紡企業全球營運總部", "county_id": "tainan", "district_id": "tn_east", "address": "台南市東區中華東路一段366號", "lat": 22.9910, "lng": 120.2330, "floors": 20, "tier": "A+"},
+
+    # --- 高雄市 (Kaohsiung) ---
+    {"id": "BLD_KH_85", "name": "高雄85大樓經貿金融中心", "county_id": "kaohsiung", "district_id": "kh_bay", "address": "高雄市苓雅區自強三路5號", "lat": 22.6115, "lng": 120.3005, "floors": 85, "tier": "A+"},
+    {"id": "BLD_KH_THE_ONE", "name": "遠雄THE ONE商辦特區", "county_id": "kaohsiung", "district_id": "kh_bay", "address": "高雄市前鎮區中華五路", "lat": 22.6080, "lng": 120.3030, "floors": 68, "tier": "A+"},
+    {"id": "BLD_KH_GC_BAY", "name": "國城亞灣經貿創新大樓", "county_id": "kaohsiung", "district_id": "kh_bay", "address": "高雄市前鎮區復興四路12號", "lat": 22.6030, "lng": 120.3015, "floors": 24, "tier": "A+"},
+    {"id": "BLD_KH_ZZ_FIN", "name": "中正金融中心大樓", "county_id": "kaohsiung", "district_id": "kh_zhongzheng", "address": "高雄市新興區中正三路55號", "lat": 22.6310, "lng": 120.3115, "floors": 22, "tier": "A"}
+]
+
+# Business Categories & Border Groups
+CORE_CATEGORIES = [
+    {"name": "IT資訊與軟體研發", "icon": "💻", "color": "#0284C7", "border": "NONE"},
+    {"name": "金融保險與資產管理", "icon": "🏦", "color": "#059669", "border": "NONE"},
+    {"name": "建築工程與室內設計", "icon": "📐", "color": "#D97706", "border": "NONE"},
+    {"name": "專業會計與法律智財", "icon": "⚖️", "color": "#7C3AED", "border": "NONE"},
+    {"name": "跨國貿易與進出口商", "icon": "🌐", "color": "#2563EB", "border": "NONE"},
+    {"name": "企管顧問與人資獵頭", "icon": "💼", "color": "#475569", "border": "NONE"},
+    # Four High-Value Border Groups
+    {"name": "商務中心/共享辦公", "icon": "🏢", "color": "#DC2626", "border": "COWORKING"},
+    {"name": "牙醫醫美/專科體系", "icon": "🩺", "color": "#0D9488", "border": "CLINIC"},
+    {"name": "企業營運總部(餐飲/零售)", "icon": "🍔", "color": "#EA580C", "border": "CORP_HQ"},
+    {"name": "物流倉儲·海空運總部", "icon": "🚢", "color": "#0284C7", "border": "LOGISTICS"}
+]
+
+COMPANY_PREFIXES = {
+    "IT資訊與軟體研發": ["智拓資訊", "聯雲數位", "凌威軟體", "鈦準科技", "數創整合", "芯曜系統", "宏曜科技", "極智雲端", "創匯資訊", "艾斯威科技"],
+    "金融保險與資產管理": ["國泰金控營運", "富邦人壽展業", "新光金融管理", "元大證券投資", "台新資產信託", "永豐租賃顧問", "兆豐財富管理"],
+    "建築工程與室內設計": ["九典聯合建築師", "原相工程顧問", "十方空間設計", "大矩聯合事務所", "太極營造工程", "築拓機電設計"],
+    "專業會計與法律智財": ["勤業眾信聯合", "安侯建業聯合", "致遠法律專利", "立揚智財專利", "宏景會計師", "誠揚企管法務"],
+    "跨國貿易與進出口商": ["日商三菱物產", "德商博世貿易", "美商邁高國際", "瑞昇進出口", "東洋精密貿易", "華貿跨國實業"],
+    "企管顧問與人資獵頭": ["藝思人才顧問", "英傑企管顧問", "萬寶華人資諮詢", "優勢管理顧問", "聯曜人力資源", "博思策略諮詢"],
+    "商務中心/共享辦公": ["JustCo 捷思商務中心", "Spaces 共享辦公室", "德事商務中心 (TEC)", "大瀚環球商務中心", "雷格斯 Regus 商務特區", "微客空間商務中心"],
+    "牙醫醫美/專科體系": ["品漾數位美學牙醫", "愛爾麗醫美旗艦", "君綺醫學美容中心", "博康聯合專科診所", "雅丰美膚醫學", "極緻植牙數位中心"],
+    "企業營運總部(餐飲/零售)": ["王品集團後勤營運中心", "瓦城泰統數位總部", "乾杯集團營運管理處", "三商餐飲資訊中心", "路易莎咖啡行政總部", "藏壽司台灣運籌中心"],
+    "物流倉儲·海空運總部": ["長榮物流總部", "陽明海運承攬處", "萬海國際航運", "中菲行國際物流", "沛榮國際海運", "台驊國際控股"]
+}
+
+LOW_VOLTAGE_NEEDS_BY_CAT = {
+    "IT資訊與軟體研發": "需求：Cat6A高頻網路佈線、10G核心交換器、雙冗餘UPS機房、人臉辨識門禁、視訊會議大螢幕",
+    "金融保險與資產管理": "需求：金融高規NDAA監控、金庫/機密檔案門禁、全天候數位錄影備份、IP-PBX總機系統、高階多功能OA彩色影印機",
+    "建築工程與室內設計": "需求：A0高速大圖工程繪圖機、NAS大型圖檔儲存陣列、全彩OA租賃合約、繪圖工作站專用網路",
+    "專業會計與法律智財": "需求：每分鐘65張以上極速雙面影印機、保密碎紙與浮水印列印、指紋感應門禁、靜音會議室視訊系統",
+    "跨國貿易與進出口商": "需求：跨時區Teams/Zoom國際視訊系統、多線國際電話交換機(SIP Trunk)、雲端PBX、高速彩色掃描歸檔",
+    "企管顧問與人資獵頭": "需求：高密度多功能面談室預約系統、分機錄音合約備份、門禁打卡考勤連動ERP、訪客登記管理平板",
+    "商務中心/共享辦公": "需求：⭐ 高客單價！多組獨立VLAN網路切割、20組以上獨立密碼刷卡門禁、每間獨立分機總機、公共OA事務機刷卡計費",
+    "牙醫醫美/專科體系": "需求：⭐ 高預算！診間隱私防護全彩監控、手術室雙備援門禁、電子病歷PACS伺服器機房、全區智慧迎賓廣播",
+    "企業營運總部(餐飲/零售)": "需求：⭐ 全台分店中央監控機房、高畫質視訊戰情室、企業級總機PBX系統、月印量5萬張以上OA影印設備",
+    "物流倉儲·海空運總部": "需求：⭐ 長距離光纖佈線、海關保稅區監控攝影機、車牌辨識道閘系統、工業級機房冷通道散熱"
+}
+
+STATUS_POOL = ["尚未拜訪", "尚未拜訪", "尚未拜訪", "洽談中", "已拜訪"]
+
+def generate_database():
+    companies = []
+    company_id_counter = 1000
+
+    for bld in LANDMARK_BUILDINGS:
+        total_floors = max(2, min(bld["floors"], 35))
+        company_count = random.randint(15, 30)
+        # Distribute across floors descending (floors can have multiple office units)
+        floor_pool = [random.randint(2, total_floors) for _ in range(company_count)]
+        chosen_floors = sorted(floor_pool, reverse=True)
+
+        for fl in chosen_floors:
+            company_id_counter += 1
+            # Pick category with weighted probability for border groups
+            dice = random.random()
+            if dice < 0.15:
+                cat_info = next(c for c in CORE_CATEGORIES if c["border"] == "COWORKING")
+            elif dice < 0.28:
+                cat_info = next(c for c in CORE_CATEGORIES if c["border"] == "CLINIC")
+            elif dice < 0.40:
+                cat_info = next(c for c in CORE_CATEGORIES if c["border"] == "CORP_HQ")
+            elif dice < 0.52:
+                cat_info = next(c for c in CORE_CATEGORIES if c["border"] == "LOGISTICS")
+            else:
+                cat_info = random.choice([c for c in CORE_CATEGORIES if c["border"] == "NONE"])
+
+            cat_name = cat_info["name"]
+            prefix = random.choice(COMPANY_PREFIXES[cat_name])
+            suffix = random.choice(["股份有限公司", "有限公司", "台灣分公司", "亞太辦事處", "企業社"])
+            comp_name = f"{prefix}{suffix}"
+
+            # Capital tier
+            cap_rand = random.random()
+            if cap_rand < 0.25:
+                capital_str = f"{random.randint(10, 60) * 1000}萬"
+                capital_tier = "TIER_100M"
+            elif cap_rand < 0.55:
+                capital_str = f"{random.randint(30, 99) * 100}萬"
+                capital_tier = "TIER_30M"
+            elif cap_rand < 0.85:
+                capital_str = f"{random.randint(5, 29) * 100}萬"
+                capital_tier = "TIER_5M"
+            else:
+                capital_str = f"{random.randint(50, 490)}萬"
+                capital_tier = "TIER_UNDER_5M"
+
+            is_listed = (capital_tier == "TIER_100M" and random.random() < 0.45)
+            tax_id = str(random.randint(10000000, 99999999))
+            rep_names = ["林俊銘", "陳威廷", "黃柏宇", "李雅婷", "張文德", "王致遠", "劉建宏", "蔡孟蓉", "吳冠廷", "鄭宇翔"]
+            rep_name = random.choice(rep_names)
+            phone = f"0{random.randint(2, 7)}-{random.randint(200, 899)}{random.randint(1000, 9999)}"
+
+            floor_str = f"{fl}F"
+            if random.random() < 0.35:
+                floor_str += f"-{random.choice(['A', 'B', 'C', '1室', '2室', '3室'])}"
+
+            # Slight jitter for map representation within building lot
+            jitter_lat = bld["lat"] + random.uniform(-0.00015, 0.00015)
+            jitter_lng = bld["lng"] + random.uniform(-0.00015, 0.00015)
+
+            comp_obj = {
+                "id": f"C_{company_id_counter}",
+                "name": comp_name,
+                "county_id": bld["county_id"],
+                "district_id": bld["district_id"],
+                "building_id": bld["id"],
+                "building_name": bld["name"],
+                "floor": floor_str,
+                "floor_num": fl,
+                "address": f"{bld['address']} {floor_str}",
+                "lat": round(jitter_lat, 6),
+                "lng": round(jitter_lng, 6),
+                "category": cat_name,
+                "cat_icon": cat_info["icon"],
+                "cat_color": cat_info["color"],
+                "border_group": cat_info["border"],
+                "capital_str": capital_str,
+                "capital_tier": capital_tier,
+                "is_listed": is_listed,
+                "tax_id": tax_id,
+                "rep_name": rep_name,
+                "phone": phone,
+                "status": random.choice(STATUS_POOL),
+                "low_voltage_needs": LOW_VOLTAGE_NEEDS_BY_CAT[cat_name]
+            }
+            companies.append(comp_obj)
+
+    # Count companies per building
+    for b in LANDMARK_BUILDINGS:
+        b["company_count"] = len([c for c in companies if c["building_id"] == b["id"]])
+
+    bundle = {
+        "counties": COUNTIES,
+        "buildings": LANDMARK_BUILDINGS,
+        "companies": companies,
+        "categories": CORE_CATEGORIES,
+        "meta": {
+            "title": "全台商辦＆企業地圖",
+            "version": "2.0.0",
+            "total_companies": len(companies),
+            "total_buildings": len(LANDMARK_BUILDINGS),
+            "target_industry": "辦公室設備（OA影印機）與弱電系統工程規劃"
+        }
+    }
+
+    output_file = 'commercial_database_taiwan.json'
+    with open(output_file, 'w', encoding='utf-8') as f:
+        json.dump(bundle, f, ensure_ascii=False, indent=2)
+
+    print(f"[OK] 全台商辦資料庫生成成功！總計 {len(companies):,} 家公司、{len(LANDMARK_BUILDINGS)} 棟指標大樓、涵蓋 {len(COUNTIES)} 個主要縣市！")
+    return bundle
+
+if __name__ == '__main__':
+    generate_database()

@@ -1,45 +1,63 @@
 # -*- coding: utf-8 -*-
 """
-全國商辦與企業地圖 · 桃園旗艦示範區 (Commercial Office & Corporate Map)
-HTML 編譯器
+全台商辦＆企業地圖 (National Commercial Office & Corporate Map)
+HTML 編譯器 · 支援全台所有都會區與縣市、首次進入詢問預設責任縣市、
+商辦大樓水牌模式、四類邊界金礦標籤、Base64 我的最愛高清圖示內嵌
 """
 
 import json
 import os
 import sys
+import base64
 
-# UTF-8 safety
 if hasattr(sys.stdout, 'reconfigure'):
     sys.stdout.reconfigure(encoding='utf-8', errors='replace')
 
-DATABASE_FILE = 'commercial_database_taoyuan.json'
+DATABASE_FILE = 'commercial_database_taiwan.json'
 
 if not os.path.exists(DATABASE_FILE):
-    raise FileNotFoundError(f"找不到 {DATABASE_FILE}！請先執行 generate_taoyuan_commercial_database.py")
+    raise FileNotFoundError(f"找不到 {DATABASE_FILE}！請先執行 generate_nationwide_commercial_database.py")
 
 with open(DATABASE_FILE, 'r', encoding='utf-8') as f:
     database_bundle = json.load(f)
 
-print(f"[OK] 成功載入 {DATABASE_FILE}，內含 {len(database_bundle['companies']):,} 家企業、{len(database_bundle['buildings']):,} 棟商辦大樓")
+print(f"[OK] 成功載入 {DATABASE_FILE}，內含 {len(database_bundle['companies']):,} 家企業、{len(database_bundle['buildings']):,} 棟商辦大樓、涵蓋 {len(database_bundle['counties'])} 個主要都會縣市")
 
 database_json = json.dumps(database_bundle, ensure_ascii=False)
+
+def get_base64_data_uri(filepath, mime='image/png'):
+    if os.path.exists(filepath):
+        with open(filepath, 'rb') as f:
+            b64 = base64.b64encode(f.read()).decode('ascii')
+            return f"data:{mime};base64,{b64}"
+    return ""
+
+b64_32_uri = get_base64_data_uri('favicon-32x32.png')
+b64_16_uri = get_base64_data_uri('favicon-16x16.png')
+b64_apple_uri = get_base64_data_uri('apple-touch-icon.png')
 
 html_template = '''<!DOCTYPE html>
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>全台商辦＆企業地圖 · 桃園示範區</title>
+  <title>全台商辦＆企業地圖 · 辦公室設備與弱電系統規劃</title>
   <meta name="application-name" content="全台商辦＆企業地圖">
   <meta name="apple-mobile-web-app-title" content="全台商辦＆企業地圖">
   <meta name="theme-color" content="#0F172A">
 
-  <!-- Favicon & Bookmarks Icons -->
-  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <!-- Favicon & Bookmarks Icons (我的最愛與分頁專屬高清小圖示 - 內嵌 Data URI 保證離線與書籤即時抓取) -->
+  <link rel="shortcut icon" type="image/png" href="__B64_32_URI__">
+  <link rel="icon" type="image/png" sizes="32x32" href="__B64_32_URI__">
+  <link rel="icon" type="image/png" sizes="16x16" href="__B64_16_URI__">
+  <link rel="apple-touch-icon" sizes="180x180" href="__B64_APPLE_URI__">
+  <link rel="icon" type="image/x-icon" href="favicon.ico">
   <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
   <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
-  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
-  <link rel="shortcut icon" href="favicon.ico">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <meta name="msapplication-TileColor" content="#0F172A">
+  <meta name="msapplication-TileImage" content="icon-192.png">
   
   <!-- Leaflet CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
@@ -58,44 +76,46 @@ html_template = '''<!DOCTYPE html>
       --sky: #38BDF8;
       --gold: #D97706;
       --gold-light: #FEF3C7;
-      --green: #16A34A;
-      --green-light: #DCFCE7;
-      --purple: #7C3AED;
-      --purple-light: #EDE9FE;
       --border: #E2E8F0;
+      --card-bg: #FFFFFF;
       --text-main: #0F172A;
       --text-muted: #64748B;
-      --card-bg: #FFFFFF;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+      --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.08), 0 2px 4px -1px rgba(0,0,0,0.04);
+      --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05);
     }
 
     * {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans TC", Roboto, Helvetica, Arial, sans-serif;
       -webkit-tap-highlight-color: transparent;
     }
 
-    body {
-      font-family: 'Noto Sans TC', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      background-color: var(--bg-primary);
-      color: var(--text-main);
-      display: flex;
-      flex-direction: column;
-      height: 100vh;
-      height: 100dvh;
+    html, body {
+      width: 100%;
+      height: 100%;
       overflow: hidden;
+      background: var(--bg-primary);
+      color: var(--text-main);
     }
 
-    /* Top Navigation Header */
+    body {
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Top Brand Navigation */
     header {
       background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%);
       color: #FFFFFF;
-      padding: 9px 16px;
+      padding: 10px 16px;
       display: flex;
-      justify-content: space-between;
       align-items: center;
-      border-bottom: 2px solid #38BDF8;
-      box-shadow: 0 4px 16px rgba(15, 23, 42, 0.25);
+      justify-content: space-between;
+      border-bottom: 2px solid #0284C7;
+      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.25);
       z-index: 1000;
       flex-shrink: 0;
     }
@@ -107,14 +127,14 @@ html_template = '''<!DOCTYPE html>
     }
 
     .brand-logo {
-      width: 36px;
-      height: 36px;
+      width: 38px;
+      height: 38px;
       background: linear-gradient(135deg, #38BDF8 0%, #0284C7 100%);
       border-radius: 9px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 20px;
+      font-size: 21px;
       box-shadow: 0 2px 10px rgba(56, 189, 248, 0.4);
     }
 
@@ -131,9 +151,9 @@ html_template = '''<!DOCTYPE html>
     .brand-badge {
       background: #D97706;
       color: #FFF;
-      font-size: 10px;
+      font-size: 11px;
       font-weight: 800;
-      padding: 2px 6px;
+      padding: 2px 7px;
       border-radius: 4px;
       letter-spacing: 0.05em;
     }
@@ -148,69 +168,91 @@ html_template = '''<!DOCTYPE html>
       display: flex;
       gap: 8px;
       align-items: center;
+      flex-wrap: wrap;
     }
 
     .btn {
-      background: #334155;
-      color: #FFFFFF;
-      border: 1px solid #475569;
-      padding: 7px 12px;
-      border-radius: 7px;
-      font-size: 12.5px;
-      font-weight: 700;
-      cursor: pointer;
       display: inline-flex;
       align-items: center;
       gap: 5px;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      border: 1px solid var(--border);
+      background: #FFFFFF;
+      color: var(--navy);
       transition: all 0.15s ease;
-      font-family: inherit;
+      white-space: nowrap;
     }
 
     .btn:hover {
-      background: #475569;
-      border-color: #64748B;
+      background: #F1F5F9;
+      border-color: #94A3B8;
+    }
+
+    .btn-county-select {
+      background: #1E293B;
+      color: #38BDF8;
+      border: 1.5px solid #38BDF8;
+      font-weight: 800;
+    }
+    .btn-county-select:hover {
+      background: #0284C7;
+      color: #FFFFFF;
+    }
+
+    .btn-bookmark {
+      background: #FEF3C7;
+      color: #B45309;
+      border: 1.5px solid #FCD34D;
+      font-weight: 800;
+    }
+    .btn-bookmark:hover {
+      background: #FDE68A;
+      border-color: #F59E0B;
     }
 
     .btn-primary {
-      background: linear-gradient(135deg, #0284C7 0%, #0369A1 100%);
-      border-color: #38BDF8;
+      background: var(--blue);
       color: #FFFFFF;
-      box-shadow: 0 2px 8px rgba(2, 132, 199, 0.35);
+      border-color: var(--blue);
     }
-
     .btn-primary:hover {
-      background: linear-gradient(135deg, #0369A1 0%, #075985 100%);
+      background: #0369A1;
+      border-color: #0369A1;
     }
 
     .btn-gold {
-      background: linear-gradient(135deg, #D97706 0%, #B45309 100%);
-      border-color: #FBBF24;
-      color: #FFFFFF;
+      background: #FEF3C7;
+      color: #92400E;
+      border-color: #FCD34D;
+    }
+    .btn-gold:hover {
+      background: #FDE68A;
     }
 
-    /* District Nav Bar (桃園 5 大精華商務區) */
+    /* District Sub-Navbar */
     .district-nav-bar {
       background: #FFFFFF;
-      border-bottom: 1.5px solid var(--border);
-      padding: 6px 14px;
+      border-bottom: 1px solid var(--border);
       display: flex;
-      gap: 8px;
       overflow-x: auto;
-      scrollbar-width: none;
+      padding: 6px 14px;
+      gap: 8px;
       flex-shrink: 0;
+      scrollbar-width: thin;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.03);
       z-index: 900;
     }
 
-    .district-nav-bar::-webkit-scrollbar {
-      display: none;
-    }
-
     .district-btn {
-      background: #F1F5F9;
-      border: 1.5px solid #E2E8F0;
-      color: #334155;
       padding: 6px 13px;
       border-radius: 20px;
+      border: 1px solid var(--border);
+      background: #F8FAFC;
+      color: #334155;
       font-size: 12.5px;
       font-weight: 700;
       cursor: pointer;
@@ -222,60 +264,56 @@ html_template = '''<!DOCTYPE html>
     }
 
     .district-btn:hover {
-      background: #E2E8F0;
-      color: var(--navy);
+      border-color: var(--blue);
+      color: var(--blue);
+      background: #FFFFFF;
     }
 
     .district-btn.active {
       background: #0F172A;
-      color: #FFFFFF;
+      color: #38BDF8;
       border-color: #0F172A;
-      box-shadow: 0 3px 10px rgba(15, 23, 42, 0.25);
+      box-shadow: 0 2px 6px rgba(15, 23, 42, 0.2);
     }
 
-    /* Main Container */
+    /* Main Container Split View */
     .app-container {
-      display: flex;
       flex: 1;
-      min-height: 0;
-      position: relative;
+      display: flex;
       overflow: hidden;
+      position: relative;
     }
 
-    /* Sidebar (Filtering & Companies) */
+    /* Sidebar */
     .sidebar {
       width: 480px;
-      max-width: 45vw;
-      background: var(--bg-primary);
-      border-right: 1.5px solid var(--border);
+      flex-shrink: 0;
+      background: #FFFFFF;
+      border-right: 1px solid var(--border);
       display: flex;
       flex-direction: column;
-      z-index: 500;
-      flex-shrink: 0;
-      box-shadow: 3px 0 16px rgba(15, 23, 42, 0.05);
-      height: 100%;
+      z-index: 800;
+      box-shadow: 2px 0 10px rgba(0,0,0,0.03);
     }
 
     .sidebar-controls {
-      padding: 12px 16px;
-      background: #FFFFFF;
+      padding: 12px 14px;
       border-bottom: 1px solid var(--border);
+      background: #F8FAFC;
       display: flex;
       flex-direction: column;
       gap: 10px;
       flex-shrink: 0;
     }
 
-    /* Search Box */
     .search-row {
       display: flex;
       gap: 6px;
-      align-items: center;
     }
 
     .search-input-wrapper {
-      position: relative;
       flex: 1;
+      position: relative;
       display: flex;
       align-items: center;
     }
@@ -283,27 +321,25 @@ html_template = '''<!DOCTYPE html>
     .search-icon-left {
       position: absolute;
       left: 10px;
-      font-size: 13px;
-      color: var(--text-muted);
+      font-size: 14px;
+      color: #94A3B8;
       pointer-events: none;
     }
 
     .search-input-wrapper input {
       width: 100%;
-      padding: 8px 32px 8px 32px;
+      padding: 8px 30px 8px 32px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
       font-size: 13px;
-      border: 1.5px solid var(--border);
-      border-radius: 7px;
       outline: none;
-      font-family: inherit;
-      background: #F8FAFC;
-      transition: all 0.15s;
+      background: #FFFFFF;
+      transition: border-color 0.15s;
     }
 
     .search-input-wrapper input:focus {
       border-color: var(--blue);
-      background: #FFFFFF;
-      box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.12);
+      box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15);
     }
 
     .search-clear-btn {
@@ -312,8 +348,8 @@ html_template = '''<!DOCTYPE html>
       background: none;
       border: none;
       color: #94A3B8;
-      cursor: pointer;
       font-size: 14px;
+      cursor: pointer;
       display: none;
     }
 
@@ -327,8 +363,9 @@ html_template = '''<!DOCTYPE html>
     .chips-label {
       font-size: 11px;
       font-weight: 800;
-      color: var(--text-muted);
-      letter-spacing: 0.04em;
+      color: #64748B;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -338,56 +375,47 @@ html_template = '''<!DOCTYPE html>
       display: flex;
       flex-wrap: wrap;
       gap: 6px;
-      max-height: 72px;
+      width: 100%;
+      max-height: 76px;
       overflow-y: auto;
       overflow-x: hidden;
-      padding: 2px 1px;
-      scrollbar-width: thin;
-      transition: max-height 0.2s ease;
-    }
-
-    .chips-scroll::-webkit-scrollbar {
-      width: 4px;
-    }
-    .chips-scroll::-webkit-scrollbar-thumb {
-      background: #CBD5E1;
-      border-radius: 2px;
+      padding: 2px 0;
     }
 
     .chips-scroll.expanded {
-      max-height: 280px;
+      max-height: 220px;
     }
 
     .chip {
-      padding: 4px 9px;
-      border-radius: 6px;
-      font-size: 11.5px;
-      font-weight: 600;
-      background: #F1F5F9;
-      color: #475569;
-      border: 1px solid #E2E8F0;
-      cursor: pointer;
-      white-space: nowrap;
-      transition: all 0.15s;
-      flex-shrink: 0;
       display: inline-flex;
       align-items: center;
       gap: 4px;
+      padding: 4px 8px;
+      font-size: 11.5px;
+      font-weight: 700;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: #FFFFFF;
+      color: #334155;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.15s ease;
+      line-height: 1.2;
     }
 
     .chip:hover {
-      background: #E2E8F0;
-      color: var(--navy);
+      border-color: var(--blue);
+      color: var(--blue);
     }
 
     .chip.active {
-      background: #0F172A;
+      background: #0284C7;
       color: #FFFFFF;
-      border-color: #0F172A;
-      font-weight: 800;
+      border-color: #0284C7;
+      box-shadow: 0 1px 4px rgba(2, 132, 199, 0.3);
     }
 
-    /* Specialized Border Group Badges (第3組高弱電金礦標籤) */
+    /* Border Category Special Styling */
     .chip.border-gold {
       border: 1.5px solid #F59E0B;
       color: #B45309;
@@ -483,14 +511,14 @@ html_template = '''<!DOCTYPE html>
     }
 
     .chip-status {
-      flex: 1 1 auto;
-      min-width: 86px;
+      flex: 1 1 calc(33.333% - 6px);
+      min-width: 90px;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      padding: 5px 8px;
+      padding: 6px 8px;
       font-size: 11.5px;
-      font-weight: 700;
+      font-weight: 800;
       border-radius: 6px;
       border: 1px solid var(--border);
       background: #FFFFFF;
@@ -502,78 +530,95 @@ html_template = '''<!DOCTYPE html>
     }
 
     .chip-status:hover {
-      border-color: var(--navy);
-      color: var(--navy);
+      border-color: #94A3B8;
+      background: #F1F5F9;
     }
 
-    .chip-status.active-all { background: var(--navy); color: #FFF; border-color: var(--navy); }
-    .chip-status.active-listed { background: #D97706; color: #FFF; border-color: #D97706; }
-    .chip-status.active-pending { background: #0284C7; color: #FFF; border-color: #0284C7; }
-    .chip-status.active-negotiating { background: #7C3AED; color: #FFF; border-color: #7C3AED; }
-    .chip-status.active-done { background: #16A34A; color: #FFF; border-color: #16A34A; }
+    .chip-status.active-all {
+      background: #0F172A;
+      color: #FFFFFF;
+      border-color: #0F172A;
+    }
+    .chip-status.active-listed {
+      background: #F59E0B;
+      color: #FFFFFF;
+      border-color: #F59E0B;
+    }
+    .chip-status.active-pending {
+      background: #64748B;
+      color: #FFFFFF;
+      border-color: #64748B;
+    }
+    .chip-status.active-negotiating {
+      background: #0284C7;
+      color: #FFFFFF;
+      border-color: #0284C7;
+    }
+    .chip-status.active-done {
+      background: #10B981;
+      color: #FFFFFF;
+      border-color: #10B981;
+    }
 
-    /* Client List Area */
+    /* Company List Content */
     .client-list-header {
-      padding: 8px 16px;
+      padding: 8px 14px;
       background: #F1F5F9;
       border-bottom: 1px solid var(--border);
+      font-size: 12px;
+      font-weight: 800;
+      color: #475569;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      font-size: 11.5px;
-      color: var(--text-muted);
-      font-weight: 700;
-      flex-shrink: 0;
     }
 
     .client-list {
       flex: 1;
       overflow-y: auto;
-      padding: 12px 14px;
+      padding: 10px;
       display: flex;
       flex-direction: column;
       gap: 10px;
-      scrollbar-width: thin;
-      -webkit-overflow-scrolling: touch;
+      background: #F8FAFC;
     }
 
-    /* Client Card */
-    .client-card {
-      background: var(--card-bg);
-      border: 1.5px solid var(--border);
-      border-radius: 9px;
+    .company-card {
+      background: #FFFFFF;
+      border: 1px solid var(--border);
+      border-radius: 8px;
       padding: 12px 14px;
-      box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
-      display: flex;
-      flex-direction: column;
-      gap: 7px;
+      box-shadow: var(--shadow-sm);
       cursor: pointer;
       transition: all 0.15s ease;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
       position: relative;
     }
 
-    .client-card:hover {
+    .company-card:hover {
       border-color: var(--blue);
-      box-shadow: 0 4px 14px rgba(2, 132, 199, 0.12);
+      box-shadow: var(--shadow-md);
       transform: translateY(-1px);
     }
 
-    .client-card.active-selected {
-      border-color: #0284C7;
+    .company-card.selected {
+      border-color: var(--blue);
       background: #F0F9FF;
       box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.25);
     }
 
-    .card-top {
+    .card-top-row {
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
       gap: 8px;
     }
 
-    .card-title {
-      font-weight: 900;
-      font-size: 14.5px;
+    .card-name {
+      font-size: 15px;
+      font-weight: 800;
       color: var(--navy);
       line-height: 1.3;
     }
@@ -640,73 +685,73 @@ html_template = '''<!DOCTYPE html>
       letter-spacing: 0.03em;
     }
 
-    .card-address {
-      font-size: 11.5px;
+    .card-addr {
+      font-size: 12px;
       color: #64748B;
-      line-height: 1.35;
+      display: flex;
+      align-items: center;
+      gap: 4px;
     }
 
-    .card-contact {
+    .card-low-voltage-box {
+      background: #F1F5F9;
+      border-left: 3px solid #0284C7;
+      padding: 6px 8px;
+      border-radius: 0 4px 4px 0;
       font-size: 11.5px;
       color: #334155;
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-
-    /* Weak point note box (弱電需求痛點) */
-    .card-weakpoint {
-      background: #F0FDF4;
-      border: 1px dashed #86EFAC;
-      border-radius: 6px;
-      padding: 6px 8px;
-      font-size: 11px;
-      color: #166534;
       line-height: 1.4;
-    }
-
-    /* Visit box summary */
-    .card-visit-box {
-      background: #F8FAFC;
-      border: 1px solid #E2E8F0;
-      border-radius: 6px;
-      padding: 6px 8px;
-      font-size: 11px;
-    }
-
-    .card-actions {
-      display: flex;
-      gap: 5px;
       margin-top: 2px;
+    }
+
+    .card-actions-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 4px;
       padding-top: 6px;
-      border-top: 1px solid #F1F5F9;
+      border-top: 1px dashed var(--border);
+    }
+
+    .status-select-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .status-select {
+      font-size: 11.5px;
+      font-weight: 700;
+      padding: 3px 6px;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+      background: #FFF;
+      cursor: pointer;
     }
 
     .card-btn {
-      flex: 1;
-      padding: 5px 8px;
+      padding: 4px 8px;
       font-size: 11px;
       font-weight: 700;
-      border-radius: 5px;
+      border-radius: 4px;
       border: 1px solid var(--border);
       background: #FFFFFF;
-      color: var(--navy);
-      cursor: pointer;
+      color: #334155;
+      text-decoration: none;
       display: inline-flex;
       align-items: center;
-      justify-content: center;
       gap: 3px;
-      text-decoration: none;
-      transition: all 0.15s;
+      cursor: pointer;
     }
 
     .card-btn:hover {
       background: #F1F5F9;
+      border-color: #94A3B8;
     }
 
-    .card-btn.btn-visited {
+    .card-btn.btn-call {
       background: #DCFCE7;
-      color: #16A34A;
+      color: #166534;
       border-color: #86EFAC;
     }
 
@@ -780,32 +825,21 @@ html_template = '''<!DOCTYPE html>
       z-index: 600;
     }
 
+    .leaflet-tooltip.marker-auto-tooltip::before {
+      border-top-color: #FFFFFF;
+    }
+
     #map.show-auto-labels .leaflet-tooltip.marker-auto-tooltip {
-      display: flex !important;
-      flex-direction: column;
+      display: block !important;
       opacity: 1 !important;
     }
 
-    .marker-auto-tooltip .lbl-title {
-      font-weight: 800;
-      font-size: 11.5px;
-      display: flex;
-      align-items: center;
-      gap: 4px;
-    }
-
-    .marker-auto-tooltip .lbl-detail {
-      font-size: 10px;
-      color: #64748B;
-      margin-top: 1px;
-    }
-
-    /* Map Tools Panel */
+    /* Map Controls Panel */
     .map-controls-panel {
       position: absolute;
-      top: 16px;
-      right: 16px;
-      z-index: 800;
+      top: 14px;
+      right: 14px;
+      z-index: 900;
       display: flex;
       flex-direction: column;
       gap: 8px;
@@ -813,58 +847,61 @@ html_template = '''<!DOCTYPE html>
 
     .map-tool-btn {
       background: #FFFFFF;
-      border: 1.5px solid var(--border);
-      color: var(--navy);
-      padding: 8px 12px;
+      border: 1px solid var(--border);
       border-radius: 8px;
-      font-weight: 700;
+      padding: 8px 12px;
       font-size: 12px;
+      font-weight: 800;
+      color: var(--navy);
+      box-shadow: var(--shadow-md);
       cursor: pointer;
-      box-shadow: 0 4px 14px rgba(15, 23, 42, 0.1);
       display: flex;
       align-items: center;
       gap: 5px;
+      transition: all 0.15s;
+    }
+
+    .map-tool-btn:hover {
+      background: #F8FAFC;
+      border-color: var(--blue);
+      transform: translateY(-1px);
     }
 
     .map-tool-btn.active-state {
-      background: #E0F2FE;
+      background: #0284C7;
+      color: #FFFFFF;
       border-color: #0284C7;
-      color: #0284C7;
-      font-weight: 800;
     }
 
-    /* Building Directory Sheet (大樓水牌模式抽屜) */
+    /* Building Directory Modal (商辦大樓整棟水牌檢視) */
     .bld-modal-overlay {
+      display: none;
       position: fixed;
       inset: 0;
-      background: rgba(15, 23, 42, 0.6);
+      background: rgba(15, 23, 42, 0.7);
+      backdrop-filter: blur(4px);
       z-index: 2000;
-      display: none;
       align-items: center;
       justify-content: center;
       padding: 16px;
     }
 
-    .bld-modal-overlay.open {
-      display: flex;
-    }
-
     .bld-card {
       background: #FFFFFF;
       width: 100%;
-      max-width: 520px;
+      max-width: 540px;
       max-height: 85vh;
-      border-radius: 12px;
+      border-radius: 14px;
       display: flex;
       flex-direction: column;
-      box-shadow: 0 20px 40px rgba(15, 23, 42, 0.3);
+      box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.35);
       overflow: hidden;
     }
 
     .bld-header {
       background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%);
       color: #FFF;
-      padding: 14px 18px;
+      padding: 15px 18px;
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
@@ -877,6 +914,151 @@ html_template = '''<!DOCTYPE html>
       display: flex;
       flex-direction: column;
       gap: 8px;
+    }
+
+    /* County Modal Styles */
+    .county-modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.75);
+      backdrop-filter: blur(6px);
+      z-index: 2100;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+
+    .county-modal-card {
+      background: #FFFFFF;
+      width: 100%;
+      max-width: 580px;
+      border-radius: 16px;
+      box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.35);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      animation: modalScaleIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes modalScaleIn {
+      from { opacity: 0; transform: scale(0.95); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    .county-modal-header {
+      background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%);
+      color: #FFF;
+      padding: 16px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .county-modal-body {
+      padding: 18px 20px;
+      max-height: 70vh;
+      overflow-y: auto;
+    }
+
+    .county-modal-tip {
+      background: #F0F9FF;
+      border: 1px solid #BAE6FD;
+      color: #0369A1;
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 12.5px;
+      line-height: 1.5;
+      margin-bottom: 14px;
+    }
+
+    .county-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .county-card-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      padding: 12px 14px;
+      background: #F8FAFC;
+      border: 2px solid #E2E8F0;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      text-align: left;
+    }
+
+    .county-card-btn:hover {
+      border-color: #38BDF8;
+      background: #F0F9FF;
+      transform: translateY(-2px);
+    }
+
+    .county-card-btn.selected {
+      border-color: #0284C7;
+      background: #E0F2FE;
+      box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.2);
+    }
+
+    .county-card-name {
+      font-size: 15px;
+      font-weight: 800;
+      color: #0F172A;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .county-card-desc {
+      font-size: 11px;
+      color: #64748B;
+      margin-top: 4px;
+      line-height: 1.3;
+    }
+
+    .county-card-badge {
+      margin-top: 8px;
+      font-size: 10px;
+      font-weight: 800;
+      background: #E2E8F0;
+      color: #334155;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    .county-card-btn.selected .county-card-badge {
+      background: #0284C7;
+      color: #FFFFFF;
+    }
+
+    .county-modal-footer {
+      padding: 14px 20px;
+      background: #F1F5F9;
+      border-top: 1px solid #E2E8F0;
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    .btn-confirm-county {
+      background: linear-gradient(135deg, #0284C7 0%, #0369A1 100%);
+      color: #FFFFFF;
+      border: none;
+      padding: 10px 22px;
+      font-size: 14px;
+      font-weight: 800;
+      border-radius: 8px;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(2, 132, 199, 0.3);
+      transition: all 0.15s ease;
+    }
+
+    .btn-confirm-county:hover {
+      background: #0284C7;
+      box-shadow: 0 6px 16px rgba(2, 132, 199, 0.4);
     }
 
     /* Mobile View Toggle Bar */
@@ -956,23 +1138,34 @@ html_template = '''<!DOCTYPE html>
       <div>
         <div class="brand-title">
           <span>全台商辦＆企業地圖</span>
-          <span class="brand-badge">桃園示範區</span>
+          <span class="brand-badge" id="headerCountyBadge">桃園市</span>
         </div>
         <div class="brand-subtitle">辦公室設備與弱電系統規劃專用 · 門禁考勤 · 監視監控 · 機房PBX · 視訊會議 · OA</div>
       </div>
     </div>
 
     <div class="header-actions">
+      <!-- County Switcher Button -->
+      <button class="btn btn-county-select" id="btnCountySelect" onclick="openCountyModal()" title="切換或設定預設責任縣市">
+        <span>📍</span> <span id="currentCountyDisplay">桃園市</span> <span>▼</span>
+      </button>
+
+      <!-- Bookmark Helper Button -->
+      <button class="btn btn-bookmark" id="btnBookmark" onclick="bookmarkSite()" title="將全台商辦＆企業地圖加到我的最愛 (Ctrl+D)">
+        <span>⭐</span><span> 加到最愛</span>
+      </button>
+
       <button class="btn btn-gold" id="btnBuildingMode" onclick="openAllBuildingsDirectory()" title="檢視全區商辦大樓清單與水牌">
         <span>🏢</span><span> 大樓水牌</span>
       </button>
+
       <button class="btn" id="btnExport" title="匯出當前企業名單與弱電需求為 CSV 檔">
         <span>📤</span><span> 匯出名單</span>
       </button>
     </div>
   </header>
 
-  <!-- District Navigation Bar (桃園 5 大精華商務區) -->
+  <!-- District Navigation Bar (動態依所選縣市載入商圈) -->
   <nav class="district-nav-bar" id="districtNavBar">
     <!-- Populated by JavaScript -->
   </nav>
@@ -988,7 +1181,7 @@ html_template = '''<!DOCTYPE html>
         <div class="search-row">
           <div class="search-input-wrapper">
             <span class="search-icon-left">🔍</span>
-            <input type="text" id="searchInput" placeholder="搜尋商辦大樓名稱、企業名稱、路段、統編、聯絡人..." autocomplete="off" />
+            <input type="text" id="searchInput" placeholder="搜尋商辦大樓、企業名稱、路段、統編、聯絡人..." autocomplete="off" />
             <button id="btnClearSearch" class="search-clear-btn">✕</button>
           </div>
           <button id="btnDoSearch" class="btn btn-primary" style="padding: 7px 12px;">搜尋</button>
@@ -1100,18 +1293,53 @@ html_template = '''<!DOCTYPE html>
     <div class="bld-card">
       <div class="bld-header">
         <div>
-          <div style="font-size:11px; font-weight:800; color:#38BDF8; text-transform:uppercase;">商辦大樓水牌名錄</div>
-          <h3 id="bldModalTitle" style="margin:2px 0 0 0; font-size:17px; font-weight:900;">大樓名稱</h3>
-          <div id="bldModalAddress" style="font-size:11.5px; color:#94A3B8; margin-top:2px;"></div>
+          <div style="font-size: 16px; font-weight: 900;" id="bldModalTitle">商辦大樓水牌名錄</div>
+          <div style="font-size: 11.5px; opacity: 0.8; margin-top: 2px;" id="bldModalSubtitle">樓層分佈與弱電規劃名冊</div>
         </div>
-        <button type="button" class="btn" onclick="closeBuildingModal()" style="padding:4px 8px; font-size:14px;">✕</button>
-      </div>
-      <div style="padding:8px 16px; background:#F8FAFC; border-bottom:1px solid var(--border); font-size:11.5px; color:var(--text-muted); display:flex; justify-content:space-between; align-items:center;">
-        <span>依樓層由高到低排列（掃樓動線）</span>
-        <span id="bldModalCount" style="font-weight:800; color:var(--blue);">共 0 家企業</span>
+        <button onclick="closeBuildingModal()" style="background:none; border:none; color:#FFF; font-size:18px; cursor:pointer;">✕</button>
       </div>
       <div class="bld-list" id="bldModalList">
-        <!-- Rendered by JavaScript -->
+        <!-- Populated dynamically -->
+      </div>
+    </div>
+  </div>
+
+  <!-- First-time / County Selector Modal -->
+  <div class="county-modal-overlay" id="modalCountySelect">
+    <div class="county-modal-card">
+      <div class="county-modal-header">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <span style="font-size:26px;">🏢</span>
+          <div>
+            <div style="font-size:17px; font-weight:900; color:#FFFFFF;">選擇業務責任縣市</div>
+            <div style="font-size:12px; color:#94A3B8;">全台商辦＆企業地圖 · 辦公室設備與弱電系統規劃</div>
+          </div>
+        </div>
+        <button onclick="closeCountyModal()" style="background:none; border:none; color:#FFF; font-size:18px; cursor:pointer;">✕</button>
+      </div>
+
+      <div class="county-modal-body">
+        <div class="county-modal-tip">
+          💡 <strong>請選擇您主要巡訪或規劃的業務責任縣市：</strong>
+          <br>系統將自動載入該都會區之指標商辦大樓群、樓層水牌與企業名錄。
+        </div>
+
+        <div class="county-grid" id="countyGridContainer">
+          <!-- Populated dynamically -->
+        </div>
+
+        <div style="margin-top:10px; padding: 10px 14px; background: #F8FAFC; border-radius: 8px; border: 1px solid #E2E8F0;">
+          <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:13px; font-weight:700; color:#334155;">
+            <input type="checkbox" id="chkSetDefaultCounty" checked style="width:16px; height:16px; cursor:pointer;" />
+            <span>記住此設定為「預設責任縣市」（下次開啟自動載入，隨時可於頂部更換）</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="county-modal-footer">
+        <button class="btn-confirm-county" onclick="confirmCountySelection()">
+          確認進入商辦地圖 🚀
+        </button>
       </div>
     </div>
   </div>
@@ -1120,69 +1348,163 @@ html_template = '''<!DOCTYPE html>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 
   <script>
-    const DATABASE = __DATABASE_BUNDLE_PLACEHOLDER__;
-    const DISTRICTS = DATABASE.districts;
-    const CATEGORIES = DATABASE.categories;
-    const BUILDINGS = DATABASE.buildings;
-    const ALL_COMPANIES = DATABASE.companies;
+    // --- Injected Database ---
+    const DB = __DATABASE_BUNDLE_PLACEHOLDER__;
+    const COUNTIES = DB.counties;
+    const ALL_BUILDINGS = DB.buildings;
+    const ALL_COMPANIES = DB.companies;
+    const CATEGORIES = DB.categories;
 
-    let currentDistrict = "all";
-    let activeCategory = "ALL";
-    let activeCapitalTier = "ALL";
-    let activeBuilding = "ALL";
-    let activeStatus = "ALL";
-    let searchQuery = "";
-    let map = null;
-    let markers = {};
-    let bldMarkers = {};
-    let currentFiltered = [];
-    let displayedCount = 60;
-    let searchDebounceTimer = null;
+    // --- State Variables ---
+    let currentCounty = 'taoyuan';
+    let currentDistrict = 'all';
+    let activeCategory = 'ALL';
+    let activeCapitalTier = 'ALL';
+    let activeBuilding = 'ALL';
+    let activeStatus = 'ALL';
+    let searchQuery = '';
     let autoLabelsEnabled = true;
 
-    // --- Mobile View Switcher ---
-    window.setMobileView = function(mode) {
-      const appContainer = document.getElementById('appContainer');
-      appContainer.classList.remove('mobile-list', 'mobile-map', 'mobile-split');
-      appContainer.classList.add(`mobile-${mode}`);
-      document.querySelectorAll('#mobileViewToggle .view-btn').forEach(btn => btn.classList.remove('active'));
-      if (mode === 'list') document.getElementById('btnViewList').classList.add('active');
-      else if (mode === 'split') document.getElementById('btnViewSplit').classList.add('active');
-      else if (mode === 'map') document.getElementById('btnViewMap').classList.add('active');
-      if (map) setTimeout(() => map.invalidateSize(), 200);
+    let selectedCountyTemp = 'taoyuan';
+
+    // Status persistence in localStorage
+    const STORAGE_KEY_STATUS = 'commercial_status_overrides_v2';
+    let statusOverrides = {};
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY_STATUS);
+      if (saved) statusOverrides = JSON.parse(saved);
+    } catch(e) {}
+
+    // Apply persistent statuses
+    ALL_COMPANIES.forEach(c => {
+      if (statusOverrides[c.id]) {
+        c.status = statusOverrides[c.id];
+      }
+    });
+
+    // --- Bookmark Helper (我的最愛功能) ---
+    window.bookmarkSite = function() {
+      const isMac = /Mac|iPod|iPhone|iPad/.test(navigator.platform);
+      const keyCombo = isMac ? '⌘ + D' : 'Ctrl + D';
+      
+      try {
+        const iconLink = document.querySelector("link[rel*='icon']");
+        if (iconLink) iconLink.href = iconLink.href;
+      } catch(e) {}
+
+      alert('⭐【加入我的最愛提示】\\n\\n請按鍵盤快捷鍵【' + keyCombo + '】將「全台商辦＆企業地圖」存入您的書籤！\\n\\n專屬高質感摩天大樓 Skyline 小圖示已為您準備就緒。');
     };
 
-    // --- Chips Expand Toggle ---
-    window.toggleChipsExpand = function(containerId, btnId) {
-      const container = document.getElementById(containerId);
-      const btn = document.getElementById(btnId);
-      if (!container) return;
-      const isExp = container.classList.toggle('expanded');
-      if (btn) btn.innerText = isExp ? '收合 ▲' : '展開全部 ▼';
+    // --- County Modal Handling ---
+    window.openCountyModal = function() {
+      selectedCountyTemp = currentCounty;
+      renderCountyGrid();
+      document.getElementById('modalCountySelect').style.display = 'flex';
     };
 
-    // --- Initialize Leaflet Map ---
+    window.closeCountyModal = function() {
+      document.getElementById('modalCountySelect').style.display = 'none';
+    };
+
+    function renderCountyGrid() {
+      const grid = document.getElementById('countyGridContainer');
+      grid.innerHTML = '';
+
+      Object.values(COUNTIES).forEach(c => {
+        const btn = document.createElement('div');
+        btn.className = `county-card-btn ${selectedCountyTemp === c.id ? 'selected' : ''}`;
+        
+        const bldCount = ALL_BUILDINGS.filter(b => b.county_id === c.id).length;
+        const compCount = ALL_COMPANIES.filter(comp => comp.county_id === c.id).length;
+        const districtNames = (c.districts || []).map(d => d.name).slice(0, 3).join(' · ');
+
+        btn.innerHTML = `
+          <div class="county-card-name">
+            <span>${c.icon}</span>
+            <span>${c.name}</span>
+          </div>
+          <div class="county-card-desc">${districtNames}等</div>
+          <div class="county-card-badge">${bldCount}棟商辦 · ${compCount}家企業</div>
+        `;
+
+        btn.onclick = () => {
+          selectedCountyTemp = c.id;
+          renderCountyGrid();
+        };
+
+        grid.appendChild(btn);
+      });
+    }
+
+    window.confirmCountySelection = function() {
+      const chk = document.getElementById('chkSetDefaultCounty');
+      if (chk && chk.checked) {
+        try {
+          localStorage.setItem('default_commercial_county', selectedCountyTemp);
+        } catch(e) {}
+      }
+
+      switchCounty(selectedCountyTemp);
+      closeCountyModal();
+    };
+
+    function switchCounty(countyId) {
+      if (!COUNTIES[countyId]) return;
+      currentCounty = countyId;
+      currentDistrict = 'all';
+
+      // Update Header Text & Badge
+      const c = COUNTIES[countyId];
+      document.getElementById('currentCountyDisplay').textContent = c.name;
+      document.getElementById('headerCountyBadge').textContent = c.name;
+
+      renderDistrictNavBar();
+
+      activeCategory = "ALL";
+      activeCapitalTier = "ALL";
+      activeBuilding = "ALL";
+      activeStatus = "ALL";
+
+      setupCategoryChips();
+      setupBuildingChips();
+      renderList();
+
+      // Fly map to county center
+      if (map && c.center) {
+        map.flyTo(c.center, c.zoom || 13, { duration: 1.2 });
+      }
+    }
+
+    // --- Leaflet Map Init ---
+    let map = null;
+    let markersLayer = L.layerGroup();
+
     function initMap() {
-      map = L.map('map', {
-        zoomControl: true,
-        attributionControl: false
-      }).setView([25.0050, 121.2850], 13);
+      const initialCenter = COUNTIES[currentCounty] ? COUNTIES[currentCounty].center : [24.9936, 121.3010];
+      const initialZoom = COUNTIES[currentCounty] ? COUNTIES[currentCounty].zoom : 13;
 
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 19
+      map = L.map('map', {
+        center: initialCenter,
+        zoom: initialZoom,
+        zoomControl: true
+      });
+
+      // CartoDB Positron Clean Basemap
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
+        subdomains: 'abcd',
+        maxZoom: 20
       }).addTo(map);
 
-      L.control.attribution({ position: 'bottomright' })
-        .addAttribution('&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>')
-        .addTo(map);
+      markersLayer.addTo(map);
 
+      // Auto Labels Handler on Zoom
       function updateLabels() {
         if (!map) return;
-        const currentZoom = map.getZoom();
+        const zoom = map.getZoom();
         const mapEl = document.getElementById('map');
-        if (!mapEl) return;
-        if (autoLabelsEnabled) {
-          mapEl.classList.toggle('show-auto-labels', currentZoom >= 16);
+        if (autoLabelsEnabled && zoom >= 16) {
+          mapEl.classList.add('show-auto-labels');
         } else {
           mapEl.classList.remove('show-auto-labels');
         }
@@ -1210,16 +1532,20 @@ html_template = '''<!DOCTYPE html>
       const nav = document.getElementById('districtNavBar');
       nav.innerHTML = '';
 
+      const c = COUNTIES[currentCounty];
+      const countyCompanies = ALL_COMPANIES.filter(comp => comp.county_id === currentCounty);
+
       const allBtn = document.createElement('button');
       allBtn.className = `district-btn ${currentDistrict === 'all' ? 'active' : ''}`;
-      allBtn.innerHTML = `<span>🏙️ 全桃園總覽</span> <span style="font-size:11px;opacity:0.8;">(${ALL_COMPANIES.length})</span>`;
+      allBtn.innerHTML = `<span>🏙️ 全${c.name}總覽</span> <span style="font-size:11px;opacity:0.8;">(${countyCompanies.length})</span>`;
       allBtn.onclick = () => switchDistrict('all');
       nav.appendChild(allBtn);
 
-      Object.values(DISTRICTS).forEach(d => {
+      const districts = c.districts || [];
+      districts.forEach(d => {
         const btn = document.createElement('button');
         btn.className = `district-btn ${currentDistrict === d.id ? 'active' : ''}`;
-        const count = ALL_COMPANIES.filter(c => c.district_id === d.id).length;
+        const count = countyCompanies.filter(comp => comp.district_id === d.id).length;
         btn.innerHTML = `<span>${d.icon} ${d.name}</span> <span style="font-size:11px;opacity:0.8;">(${count})</span>`;
         btn.onclick = () => switchDistrict(d.id);
         nav.appendChild(btn);
@@ -1240,12 +1566,13 @@ html_template = '''<!DOCTYPE html>
       renderList();
 
       if (map) {
+        const c = COUNTIES[currentCounty];
         if (distId === 'all') {
-          map.flyTo([25.0150, 121.2800], 12, { duration: 1 });
+          map.flyTo(c.center, c.zoom || 13, { duration: 1 });
         } else {
-          const d = DISTRICTS[distId];
+          const d = (c.districts || []).find(item => item.id === distId);
           if (d && d.center) {
-            map.flyTo(d.center, d.zoom || 15, { duration: 1 });
+            map.flyTo(d.center, d.zoom || 16, { duration: 1 });
           }
         }
       }
@@ -1256,521 +1583,561 @@ html_template = '''<!DOCTYPE html>
       const container = document.getElementById('categoryChips');
       container.innerHTML = '';
 
-      const baseList = currentDistrict === 'all' ? ALL_COMPANIES : ALL_COMPANIES.filter(c => c.district_id === currentDistrict);
+      let baseList = ALL_COMPANIES.filter(c => c.county_id === currentCounty);
+      if (currentDistrict !== 'all') {
+        baseList = baseList.filter(c => c.district_id === currentDistrict);
+      }
 
+      // "全部" Chip
       const allBtn = document.createElement('button');
       allBtn.className = `chip ${activeCategory === 'ALL' ? 'active' : ''}`;
-      allBtn.innerText = `全部企業 (${baseList.length})`;
+      allBtn.textContent = `全部 (${baseList.length})`;
       allBtn.onclick = () => {
         activeCategory = 'ALL';
-        document.querySelectorAll('#categoryChips .chip').forEach(b => b.classList.remove('active'));
-        allBtn.classList.add('active');
-        document.getElementById('catCurrentLabel').innerText = '全部企業';
+        updateCategoryChipsSelection();
         renderList();
       };
       container.appendChild(allBtn);
 
+      // Render Each Category with Special Border Badges
       CATEGORIES.forEach(cat => {
-        const count = baseList.filter(c => c.category_id === cat.id).length;
+        const count = baseList.filter(c => c.category === cat.name).length;
         if (count === 0) return;
 
         const btn = document.createElement('button');
         let borderClass = '';
-        if (cat.id === 'COWORKING') borderClass = 'border-gold';
-        else if (cat.id === 'CLINIC') borderClass = 'border-red';
-        else if (cat.id === 'FNB_HQ') borderClass = 'border-orange';
-        else if (cat.id === 'LOGISTICS_HQ') borderClass = 'border-cyan';
+        if (cat.border === 'COWORKING') borderClass = 'border-red';
+        else if (cat.border === 'CLINIC') borderClass = 'border-cyan';
+        else if (cat.border === 'CORP_HQ') borderClass = 'border-orange';
+        else if (cat.border === 'LOGISTICS') borderClass = 'border-gold';
 
-        btn.className = `chip ${borderClass} ${activeCategory === cat.id ? 'active' : ''}`;
-        btn.innerText = `${cat.icon} ${cat.name} (${count})`;
+        btn.className = `chip ${borderClass} ${activeCategory === cat.name ? 'active' : ''}`;
+        
+        let prefix = cat.border !== 'NONE' ? '⭐ ' : '';
+        btn.innerHTML = `<span>${cat.icon}</span> <span>${prefix}${cat.name} (${count})</span>`;
         btn.onclick = () => {
-          activeCategory = cat.id;
-          document.querySelectorAll('#categoryChips .chip').forEach(b => b.classList.remove('active'));
-          btn.classList.add('active');
-          document.getElementById('catCurrentLabel').innerText = cat.name;
+          activeCategory = (activeCategory === cat.name) ? 'ALL' : cat.name;
+          updateCategoryChipsSelection();
           renderList();
         };
         container.appendChild(btn);
       });
+
+      updateCategoryChipsSelection();
     }
 
-    // --- Setup Building Chips ---
+    function updateCategoryChipsSelection() {
+      const chips = document.querySelectorAll('#categoryChips .chip');
+      chips.forEach((c, idx) => {
+        if (idx === 0) {
+          c.classList.toggle('active', activeCategory === 'ALL');
+        } else {
+          const text = c.textContent;
+          c.classList.toggle('active', activeCategory !== 'ALL' && text.includes(activeCategory));
+        }
+      });
+      document.getElementById('catCurrentLabel').textContent = activeCategory === 'ALL' ? '全部企業' : activeCategory;
+    }
+
+    // --- Setup Building Chips (指標商辦大樓整棟名單) ---
     function setupBuildingChips() {
       const container = document.getElementById('buildingChips');
       container.innerHTML = '';
 
-      const bldList = currentDistrict === 'all' ? BUILDINGS : BUILDINGS.filter(b => b.district_id === currentDistrict);
+      let baseBlds = ALL_BUILDINGS.filter(b => b.county_id === currentCounty);
+      if (currentDistrict !== 'all') {
+        baseBlds = baseBlds.filter(b => b.district_id === currentDistrict);
+      }
 
+      // "全部大樓" Chip
       const allBtn = document.createElement('button');
       allBtn.className = `chip ${activeBuilding === 'ALL' ? 'active' : ''}`;
-      allBtn.innerText = `全部大樓 (${bldList.length}棟)`;
+      allBtn.textContent = `全部大樓 (${baseBlds.length})`;
       allBtn.onclick = () => {
         activeBuilding = 'ALL';
-        document.querySelectorAll('#buildingChips .chip').forEach(b => b.classList.remove('active'));
-        allBtn.classList.add('active');
-        document.getElementById('buildingCurrentLabel').innerText = '全部大樓';
+        updateBuildingChipsSelection();
         renderList();
       };
       container.appendChild(allBtn);
 
-      bldList.forEach(b => {
+      baseBlds.forEach(b => {
+        const compCount = ALL_COMPANIES.filter(c => c.building_id === b.id).length;
         const btn = document.createElement('button');
-        btn.className = `chip ${activeBuilding === b.name ? 'active' : ''}`;
-        btn.innerText = `🏢 ${b.name} (${b.company_count}家)`;
+        btn.className = `chip ${activeBuilding === b.id ? 'active' : ''}`;
+        btn.innerHTML = `<span>🏢</span> <span>${b.name} (${compCount})</span>`;
         btn.onclick = () => {
-          activeBuilding = b.name;
-          document.querySelectorAll('#buildingChips .chip').forEach(c => c.classList.remove('active'));
-          btn.classList.add('active');
-          document.getElementById('buildingCurrentLabel').innerText = b.name;
+          activeBuilding = (activeBuilding === b.id) ? 'ALL' : b.id;
+          updateBuildingChipsSelection();
           renderList();
-          if (map) map.flyTo([b.lat, b.lng], 17, { duration: 1 });
+          if (activeBuilding !== 'ALL' && map) {
+            map.flyTo([b.lat, b.lng], 17, { duration: 0.8 });
+          }
         };
         container.appendChild(btn);
       });
+
+      updateBuildingChipsSelection();
     }
 
-    // --- Execute Filters ---
-    function executeFilter() {
-      const q = (searchQuery || "").trim().toLowerCase();
-      const keywords = q ? q.split(/\\s+/).filter(Boolean) : [];
+    function updateBuildingChipsSelection() {
+      const chips = document.querySelectorAll('#buildingChips .chip');
+      chips.forEach((c, idx) => {
+        if (idx === 0) {
+          c.classList.toggle('active', activeBuilding === 'ALL');
+        } else {
+          c.classList.toggle('active', activeBuilding !== 'ALL' && c.innerHTML.includes(activeBuilding));
+        }
+      });
+      const bObj = ALL_BUILDINGS.find(b => b.id === activeBuilding);
+      document.getElementById('buildingCurrentLabel').textContent = bObj ? bObj.name : '全部大樓';
+    }
 
-      currentFiltered = ALL_COMPANIES.filter(c => {
-        // District filter
+    // Toggle Expand/Collapse for Chips Containers
+    window.toggleChipsExpand = function(containerId, btnId) {
+      const el = document.getElementById(containerId);
+      const btn = document.getElementById(btnId);
+      if (!el || !btn) return;
+      const isExp = el.classList.toggle('expanded');
+      btn.textContent = isExp ? '收合 ▲' : '展開全部 ▼';
+    };
+
+    // --- Capital Tier Filtering Setup ---
+    document.querySelectorAll('#capitalChips .chip-capital').forEach(btn => {
+      btn.onclick = () => {
+        document.querySelectorAll('#capitalChips .chip-capital').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        activeCapitalTier = btn.dataset.tier;
+        document.getElementById('capitalCurrentLabel').textContent = btn.textContent;
+        renderList();
+      };
+    });
+
+    // --- Status Filtering Setup ---
+    document.querySelectorAll('#statusChips .chip-status').forEach(btn => {
+      btn.onclick = () => {
+        document.querySelectorAll('#statusChips .chip-status').forEach(b => {
+          b.className = 'chip-status';
+        });
+        const st = btn.dataset.status;
+        activeStatus = st;
+        if (st === 'ALL') btn.classList.add('active-all');
+        else if (st === 'LISTED') btn.classList.add('active-listed');
+        else if (st === '尚未拜訪') btn.classList.add('active-pending');
+        else if (st === '洽談中') btn.classList.add('active-negotiating');
+        else if (st === '已拜訪') btn.classList.add('active-done');
+        renderList();
+      };
+    });
+
+    // --- Search Input Setup ---
+    const searchInput = document.getElementById('searchInput');
+    const btnClearSearch = document.getElementById('btnClearSearch');
+
+    searchInput.addEventListener('input', (e) => {
+      searchQuery = e.target.value.trim().toLowerCase();
+      btnClearSearch.style.display = searchQuery ? 'block' : 'none';
+      renderList();
+    });
+
+    btnClearSearch.addEventListener('click', () => {
+      searchInput.value = '';
+      searchQuery = '';
+      btnClearSearch.style.display = 'none';
+      renderList();
+    });
+
+    document.getElementById('btnResetFilter').onclick = () => {
+      activeCategory = 'ALL';
+      activeCapitalTier = 'ALL';
+      activeBuilding = 'ALL';
+      activeStatus = 'ALL';
+      searchQuery = '';
+      searchInput.value = '';
+      btnClearSearch.style.display = 'none';
+
+      document.querySelectorAll('#capitalChips .chip-capital').forEach((b, idx) => b.classList.toggle('active', idx === 0));
+      document.querySelectorAll('#statusChips .chip-status').forEach((b, idx) => {
+        b.className = 'chip-status';
+        if (idx === 0) b.classList.add('active-all');
+      });
+
+      updateCategoryChipsSelection();
+      updateBuildingChipsSelection();
+      renderList();
+    };
+
+    // --- Render List & Map Markers ---
+    function getFilteredCompanies() {
+      return ALL_COMPANIES.filter(c => {
+        if (c.county_id !== currentCounty) return false;
         if (currentDistrict !== 'all' && c.district_id !== currentDistrict) return false;
-
-        // Category filter
-        if (activeCategory !== 'ALL' && c.category_id !== activeCategory) return false;
-
-        // Capital tier filter
+        if (activeCategory !== 'ALL' && c.category !== activeCategory) return false;
         if (activeCapitalTier !== 'ALL' && c.capital_tier !== activeCapitalTier) return false;
-
-        // Building filter
-        if (activeBuilding !== 'ALL' && c.building_name !== activeBuilding) return false;
-
-        // Status filter
+        if (activeBuilding !== 'ALL' && c.building_id !== activeBuilding) return false;
         if (activeStatus === 'LISTED') {
-          if (c.is_listed !== '是') return false;
-        } else if (activeStatus !== 'ALL' && c.status !== activeStatus) {
-          return false;
+          if (!c.is_listed) return false;
+        } else if (activeStatus !== 'ALL') {
+          if (c.status !== activeStatus) return false;
         }
 
-        // Keywords match
-        if (keywords.length > 0) {
-          const targetStr = `${c.name} ${c.building_name} ${c.road} ${c.address} ${c.contact} ${c.phone} ${c.notes} ${c.category_name}`.toLowerCase();
-          const matchAll = keywords.every(kw => targetStr.includes(kw));
-          if (!matchAll) return false;
+        if (searchQuery) {
+          const matchName = c.name.toLowerCase().includes(searchQuery);
+          const matchBld = c.building_name.toLowerCase().includes(searchQuery);
+          const matchAddr = c.address.toLowerCase().includes(searchQuery);
+          const matchTax = (c.tax_id || '').includes(searchQuery);
+          const matchRep = (c.rep_name || '').toLowerCase().includes(searchQuery);
+          if (!matchName && !matchBld && !matchAddr && !matchTax && !matchRep) return false;
         }
 
         return true;
       });
     }
 
-    // --- Render List & Markers ---
+    function updateCounts(filtered) {
+      document.getElementById('resultCountText').textContent = `顯示 ${filtered.length} 家商辦企業`;
+      document.getElementById('mobileCount').textContent = filtered.length;
+
+      let countyCompanies = ALL_COMPANIES.filter(c => c.county_id === currentCounty);
+      if (currentDistrict !== 'all') {
+        countyCompanies = countyCompanies.filter(c => c.district_id === currentDistrict);
+      }
+
+      document.getElementById('countAll').textContent = countyCompanies.length;
+      document.getElementById('countListed').textContent = countyCompanies.filter(c => c.is_listed).length;
+      document.getElementById('countPending').textContent = countyCompanies.filter(c => c.status === '尚未拜訪').length;
+      document.getElementById('countNegotiating').textContent = countyCompanies.filter(c => c.status === '洽談中').length;
+      document.getElementById('countDone').textContent = countyCompanies.filter(c => c.status === '已拜訪').length;
+    }
+
     function renderList() {
-      executeFilter();
+      const filtered = getFilteredCompanies();
+      updateCounts(filtered);
 
-      const countText = `顯示 ${currentFiltered.length.toLocaleString()} 家商辦企業（全區共 ${ALL_COMPANIES.length.toLocaleString()} 家）`;
-      document.getElementById('resultCountText').innerText = countText;
-      document.getElementById('mobileCount').innerText = currentFiltered.length;
+      const listContainer = document.getElementById('clientList');
+      listContainer.innerHTML = '';
 
-      updateStatusCounts();
-      renderCardsSlice(true);
-      updateMarkers(currentFiltered);
-    }
-
-    function updateStatusCounts() {
-      const base = currentDistrict === 'all' ? ALL_COMPANIES : ALL_COMPANIES.filter(c => c.district_id === currentDistrict);
-      document.getElementById('countAll').innerText = base.length;
-      document.getElementById('countListed').innerText = base.filter(c => c.is_listed === '是').length;
-      document.getElementById('countPending').innerText = base.filter(c => c.status === '尚未拜訪').length;
-      document.getElementById('countNegotiating').innerText = base.filter(c => c.status === '洽談中').length;
-      document.getElementById('countDone').innerText = base.filter(c => c.status === '已拜訪').length;
-    }
-
-    function renderCardsSlice(isReset) {
-      const container = document.getElementById('clientList');
-      if (isReset) {
-        container.innerHTML = "";
-        displayedCount = 60;
-      }
-
-      if (currentFiltered.length === 0) {
-        container.innerHTML = `
-          <div style="text-align:center; padding:40px 16px; color:#64748B;">
-            <div style="font-size:36px; margin-bottom:8px;">🔍</div>
-            <div style="font-weight:800; font-size:15px; color:#0F172A;">查無符合條件的商辦企業</div>
-            <div style="font-size:12px; margin-top:4px;">請嘗試更換產業類別或點擊右上角「重設篩選」</div>
+      if (filtered.length === 0) {
+        listContainer.innerHTML = `
+          <div style="text-align:center; padding:40px 10px; color:#94A3B8;">
+            <div style="font-size:32px; margin-bottom:8px;">🏢</div>
+            <div style="font-size:14px; font-weight:700;">查無符合條件之商辦企業</div>
+            <div style="font-size:12px; margin-top:4px;">請調整上方篩選條件或重設搜尋關鍵字</div>
           </div>
         `;
-        return;
-      }
+      } else {
+        filtered.forEach(comp => {
+          const card = document.createElement('div');
+          card.className = 'company-card';
+          card.id = `card-${comp.id}`;
 
-      const startIndex = isReset ? 0 : container.querySelectorAll('.client-card').length;
-      const endIndex = Math.min(displayedCount, currentFiltered.length);
+          let borderBadge = '';
+          if (comp.border_group === 'COWORKING') borderBadge = '<span class="badge-cat" style="background:#FEE2E2;color:#DC2626;">⭐ 共享辦公</span>';
+          else if (comp.border_group === 'CLINIC') borderBadge = '<span class="badge-cat" style="background:#E0F2FE;color:#0284C7;">⭐ 診所體系</span>';
+          else if (comp.border_group === 'CORP_HQ') borderBadge = '<span class="badge-cat" style="background:#FFEDD5;color:#EA580C;">⭐ 企業總部</span>';
+          else if (comp.border_group === 'LOGISTICS') borderBadge = '<span class="badge-cat" style="background:#FEF3C7;color:#D97706;">⭐ 海空運總部</span>';
 
-      for (let i = startIndex; i < endIndex; i++) {
-        const c = currentFiltered[i];
-        const card = document.createElement('div');
-        card.className = "client-card";
-        card.id = `card-${c.id}`;
-
-        const isDone = c.status === '已拜訪';
-        const isNeg = c.status === '洽談中';
-
-        card.innerHTML = `
-          <div class="card-top">
-            <div class="card-title">${c.name}</div>
-            <div class="card-badges-row">
-              ${c.is_listed === '是' ? '<span class="badge-listed">★ 上市櫃</span>' : ''}
-              <span class="badge-capital ${c.capital_tier === 'TIER_100M' ? 'tier-100m' : ''}">${c.capital_str}</span>
+          card.innerHTML = `
+            <div class="card-top-row">
+              <div class="card-name">${comp.name}</div>
+              <div class="card-badges-row">
+                ${comp.is_listed ? '<span class="badge-listed">👑 上市櫃</span>' : ''}
+                ${borderBadge}
+                <span class="badge-capital ${comp.capital_tier === 'TIER_100M' ? 'tier-100m' : ''}">資本額: ${comp.capital_str}</span>
+              </div>
             </div>
-          </div>
 
-          <div class="card-bld-tag" onclick="openBuildingByName('${c.building_name}')" title="點擊查看整棟大樓水牌">
-            <span>🏢 ${c.building_name}</span>
-            <span class="card-floor-pill">${c.floor}</span>
-            <span class="badge-cat" style="background:${c.category_color}15; color:${c.category_color};">${c.category_icon} ${c.category_name}</span>
-          </div>
+            <div class="card-bld-tag">
+              <span>🏢</span> <strong>${comp.building_name}</strong>
+              <span class="card-floor-pill">${comp.floor}</span>
+              <span style="font-size:11px; color:#64748B;">(統編: ${comp.tax_id})</span>
+            </div>
 
-          <div class="card-address">
-            📍 ${c.road} · ${c.address}
-          </div>
+            <div class="card-addr">
+              <span>📍</span> <span>${comp.address}</span>
+            </div>
 
-          <div class="card-contact">
-            <span>👤 ${c.contact}</span>
-            <span>📞 ${c.phone}</span>
-          </div>
+            <div class="card-low-voltage-box">
+              ⚡ <strong>弱電與設備規劃指引：</strong><br>${comp.low_voltage_needs}
+            </div>
 
-          <div class="card-weakpoint">
-            💡 <strong>弱電與設備痛點：</strong>${c.notes}
-          </div>
+            <div class="card-actions-row">
+              <div class="status-select-wrapper">
+                <span style="font-size:11px; color:#64748B; font-weight:700;">狀態:</span>
+                <select class="status-select" onchange="updateCompanyStatus('${comp.id}', this.value, event)">
+                  <option value="尚未拜訪" ${comp.status === '尚未拜訪' ? 'selected' : ''}>⏳ 尚未拜訪</option>
+                  <option value="洽談中" ${comp.status === '洽談中' ? 'selected' : ''}>💬 洽談中</option>
+                  <option value="已拜訪" ${comp.status === '已拜訪' ? 'selected' : ''}>✅ 已拜訪</option>
+                </select>
+              </div>
 
-          <div class="card-actions">
-            <button class="card-btn ${isDone ? 'btn-visited' : ''}" onclick="toggleVisitStatus(${c.id}, event)">
-              ${isDone ? '✅ 已拜訪' : (isNeg ? '💬 洽談中' : '✓ 標記已訪')}
-            </button>
-            <button class="card-btn" onclick="openBuildingByName('${c.building_name}')">
-              🏢 整棟水牌
-            </button>
-            <a href="https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(c.address)}" target="_blank" class="card-btn btn-nav" onclick="event.stopPropagation()">
-              🚗 導航
-            </a>
-          </div>
-        `;
+              <div style="display:flex; gap:5px;">
+                <button class="card-btn" onclick="openBuildingDirectory('${comp.building_id}', event)" title="檢視整棟大樓水牌">
+                  🏢 水牌
+                </button>
+                <a class="card-btn btn-call" href="tel:${comp.phone}" onclick="event.stopPropagation()">
+                  📞 撥號
+                </a>
+                <a class="card-btn btn-nav" href="https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(comp.address)}" target="_blank" onclick="event.stopPropagation()">
+                  🧭 導航
+                </a>
+              </div>
+            </div>
+          `;
 
-        card.onclick = () => {
-          document.querySelectorAll('.client-card').forEach(el => el.classList.remove('active-selected'));
-          card.classList.add('active-selected');
-          if (markers[c.id]) {
-            markers[c.id].openPopup();
-            map.flyTo([c.lat, c.lng], 17, { duration: 0.8 });
-          }
-        };
+          card.onclick = () => {
+            selectCompany(comp);
+          };
 
-        container.appendChild(card);
+          listContainer.appendChild(card);
+        });
+      }
+
+      renderMapMarkers(filtered);
+    }
+
+    function selectCompany(comp) {
+      document.querySelectorAll('.company-card').forEach(c => c.classList.remove('selected'));
+      const targetCard = document.getElementById(`card-${comp.id}`);
+      if (targetCard) {
+        targetCard.classList.add('selected');
+        targetCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+
+      if (map) {
+        map.flyTo([comp.lat, comp.lng], 18, { duration: 0.8 });
       }
     }
 
-    // --- Update Leaflet Markers ---
-    function updateMarkers(filteredList) {
+    window.updateCompanyStatus = function(compId, newStatus, evt) {
+      if (evt) evt.stopPropagation();
+      const comp = ALL_COMPANIES.find(c => c.id === compId);
+      if (comp) {
+        comp.status = newStatus;
+        statusOverrides[compId] = newStatus;
+        try {
+          localStorage.setItem(STORAGE_KEY_STATUS, JSON.stringify(statusOverrides));
+        } catch(e) {}
+        updateCounts(getFilteredCompanies());
+      }
+    };
+
+    // --- Render Map Markers ---
+    function renderMapMarkers(filtered) {
       if (!map) return;
-      Object.values(markers).forEach(m => map.removeLayer(m));
-      markers = {};
+      markersLayer.clearLayers();
 
-      const bounds = L.latLngBounds();
+      // Group filtered companies by building
+      const bldMap = {};
+      filtered.forEach(c => {
+        if (!bldMap[c.building_id]) bldMap[c.building_id] = [];
+        bldMap[c.building_id].push(c);
+      });
 
-      filteredList.forEach(c => {
-        let pinColor = c.category_color || "#0284C7";
-        if (c.status === "已拜訪") pinColor = "#16A34A";
-        else if (c.status === "洽談中") pinColor = "#7C3AED";
+      // Plot Landmark Building Markers
+      ALL_BUILDINGS.filter(b => b.county_id === currentCounty).forEach(bld => {
+        const compsInBld = bldMap[bld.id] || [];
+        if (compsInBld.length === 0 && activeBuilding !== 'ALL') return;
 
-        const iconHtml = `<div class="comp-marker" style="background:${pinColor};">${c.is_listed === '是' ? '★' : c.category_icon}</div>`;
-        const icon = L.divIcon({
-          html: iconHtml,
-          className: '',
-          iconSize: [26, 26],
-          iconAnchor: [13, 13],
-          popupAnchor: [0, -13]
+        const countText = compsInBld.length > 0 ? `${compsInBld.length}家` : `${bld.company_count}家`;
+        
+        const bldIcon = L.divIcon({
+          className: 'custom-bld-pin',
+          html: `
+            <div class="bld-marker" title="${bld.name} (${countText})">
+              <span>🏢</span>
+              <span>${bld.name}</span>
+              <span style="background:#0284C7;color:#FFF;padding:1px 4px;border-radius:4px;font-size:10px;">${countText}</span>
+            </div>
+          `,
+          iconSize: [140, 28],
+          iconAnchor: [70, 14]
         });
 
-        const marker = L.marker([c.lat, c.lng], { icon: icon }).addTo(map);
+        const marker = L.marker([bld.lat, bld.lng], { icon: bldIcon });
 
-        // Auto Tooltip on Zoom
-        const tooltipContent = `
-          <div class="lbl-title">
-            <span>${c.name}</span>
-            <span style="font-size:10px;color:#0284C7;font-weight:900;">${c.floor}</span>
-          </div>
-          <div class="lbl-detail">
-            <span>🏢 ${c.building_name}</span> · <span>${c.capital_str}</span>
-          </div>
-        `;
-
-        marker.bindTooltip(tooltipContent, {
+        // Auto tooltip on zoom
+        marker.bindTooltip(`🏢 ${bld.name} · ${bld.floors}F · ${bld.address}`, {
           permanent: true,
           direction: 'top',
-          offset: [0, -14],
+          offset: [0, -10],
           className: 'marker-auto-tooltip'
         });
 
-        const popupContent = `
-          <div style="font-family:inherit; min-width:240px; padding:2px;">
-            <div style="font-weight:900; font-size:14px; color:#0F172A; margin-bottom:2px;">
-              ${c.name}
-            </div>
-            <div style="font-size:11.5px; color:#0284C7; font-weight:800; margin-bottom:4px;">
-              🏢 ${c.building_name} · ${c.floor}
-            </div>
-            <div style="font-size:11px; color:#64748B; margin-bottom:6px;">
-              📍 ${c.address}
-            </div>
-            <div style="font-size:11px; background:#F0FDF4; border:1px dashed #86EFAC; padding:4px 6px; border-radius:4px; color:#166534; margin-bottom:8px;">
-              💡 <strong>弱電痛點：</strong>${c.notes}
-            </div>
-            <div style="display:flex; gap:5px;">
-              <button onclick="openBuildingByName('${c.building_name}')" style="flex:1; background:#0F172A; color:#FFF; border:none; padding:6px; border-radius:5px; font-size:11px; font-weight:700; cursor:pointer;">
-                🏢 大樓全棟水牌
-              </button>
-              <a href="https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(c.address)}" target="_blank" style="background:#0284C7; color:#FFF; text-decoration:none; padding:6px 10px; border-radius:5px; font-size:11px; font-weight:800; display:inline-flex; align-items:center;">
-                🚗 導航
-              </a>
-            </div>
-          </div>
-        `;
-        marker.bindPopup(popupContent);
+        marker.on('click', () => {
+          openBuildingDirectory(bld.id);
+        });
 
-        markers[c.id] = marker;
-        bounds.extend([c.lat, c.lng]);
+        markersLayer.addLayer(marker);
       });
-
-      if (filteredList.length > 0 && bounds.isValid() && filteredList.length <= 120) {
-        map.fitBounds(bounds, { padding: [50, 50], maxZoom: 16 });
-      }
-
-      if (autoLabelsEnabled && map.getZoom() >= 16) {
-        document.getElementById('map').classList.add('show-auto-labels');
-      }
     }
 
-    // --- Building Directory View (大樓水牌模式) ---
-    window.openBuildingByName = function(bldName) {
-      const companies = ALL_COMPANIES.filter(c => c.building_name === bldName);
-      if (companies.length === 0) return;
+    // --- Building Directory Modal (商辦水牌名錄) ---
+    window.openBuildingDirectory = function(bldId, evt) {
+      if (evt) evt.stopPropagation();
+      const bld = ALL_BUILDINGS.find(b => b.id === bldId);
+      if (!bld) return;
 
-      // Sort by floor descending (e.g. 32F down to 2F)
-      companies.sort((a, b) => b.floor_num - a.floor_num);
+      document.getElementById('bldModalTitle').textContent = `🏢 ${bld.name} 水牌名錄`;
+      document.getElementById('bldModalSubtitle').textContent = `${bld.address} · 全棟 ${bld.floors} 層 · 總進駐企業名冊`;
 
-      document.getElementById('bldModalTitle').innerText = `🏢 ${bldName}`;
-      document.getElementById('bldModalAddress').innerText = companies[0].address.replace(companies[0].floor, '');
-      document.getElementById('bldModalCount').innerText = `全棟共 ${companies.length} 家企業客戶`;
+      const bldList = document.getElementById('bldModalList');
+      bldList.innerHTML = '';
 
-      const listContainer = document.getElementById('bldModalList');
-      listContainer.innerHTML = '';
+      const comps = ALL_COMPANIES.filter(c => c.building_id === bldId)
+                                 .sort((a, b) => b.floor_num - a.floor_num);
 
-      companies.forEach(c => {
-        const item = document.createElement('div');
-        item.style.cssText = 'background:#F8FAFC; border:1px solid #E2E8F0; border-radius:8px; padding:10px 12px; display:flex; flex-direction:column; gap:4px;';
-        item.innerHTML = `
-          <div style="display:flex; justify-content:space-between; align-items:center;">
-            <div style="display:flex; align-items:center; gap:6px;">
-              <span style="background:#0F172A; color:#38BDF8; font-weight:900; font-size:11px; padding:1px 6px; border-radius:4px;">${c.floor}</span>
-              <span style="font-weight:900; font-size:13px; color:#0F172A;">${c.name}</span>
+      if (comps.length === 0) {
+        bldList.innerHTML = '<div style="text-align:center;padding:30px;color:#94A3B8;">本大樓目前尚無登錄之商辦企業</div>';
+      } else {
+        comps.forEach(c => {
+          const item = document.createElement('div');
+          item.style.cssText = 'background:#F8FAFC; border:1px solid #E2E8F0; border-radius:8px; padding:10px 12px; display:flex; justify-content:space-between; align-items:center;';
+          
+          let borderIcon = '';
+          if (c.border_group !== 'NONE') borderIcon = '⭐ ';
+
+          item.innerHTML = `
+            <div>
+              <div style="display:flex; align-items:center; gap:6px;">
+                <span class="card-floor-pill">${c.floor}</span>
+                <span style="font-size:14px; font-weight:800; color:#0F172A;">${borderIcon}${c.name}</span>
+                ${c.is_listed ? '<span class="badge-listed">上市櫃</span>' : ''}
+              </div>
+              <div style="font-size:11.5px; color:#64748B; margin-top:3px;">
+                ${c.cat_icon} ${c.category} · 資本額: ${c.capital_str} · 統編: ${c.tax_id}
+              </div>
+              <div style="font-size:11px; color:#0284C7; margin-top:3px;">
+                ⚡ ${c.low_voltage_needs}
+              </div>
             </div>
-            <span style="font-size:10.5px; font-weight:800; color:#B45309; background:#FEF3C7; padding:1px 5px; border-radius:4px;">${c.capital_str}</span>
-          </div>
-          <div style="font-size:11px; color:#64748B; display:flex; gap:8px;">
-            <span>${c.category_icon} ${c.category_name}</span> · <span>👤 ${c.contact}</span> · <span>📞 ${c.phone}</span>
-          </div>
-          <div style="font-size:10.5px; color:#166534; background:#DCFCE7; padding:3px 6px; border-radius:4px; margin-top:2px;">
-            💡 ${c.notes}
-          </div>
-        `;
-        listContainer.appendChild(item);
-      });
+            <div>
+              <button class="card-btn btn-call" onclick="window.location.href='tel:${c.phone}'">📞 撥號</button>
+            </div>
+          `;
+          bldList.appendChild(item);
+        });
+      }
 
-      document.getElementById('modalBuilding').classList.add('open');
+      document.getElementById('modalBuilding').style.display = 'flex';
     };
 
     window.closeBuildingModal = function() {
-      document.getElementById('modalBuilding').classList.remove('open');
+      document.getElementById('modalBuilding').style.display = 'none';
     };
 
     window.openAllBuildingsDirectory = function() {
-      const bldList = currentDistrict === 'all' ? BUILDINGS : BUILDINGS.filter(b => b.district_id === currentDistrict);
-      document.getElementById('bldModalTitle').innerText = `🏢 桃園商辦大樓總名錄`;
-      document.getElementById('bldModalAddress').innerText = `共收錄 ${bldList.length} 棟指標商務大樓`;
-      document.getElementById('bldModalCount').innerText = `點擊任一大樓展開樓層水牌`;
-
-      const listContainer = document.getElementById('bldModalList');
-      listContainer.innerHTML = '';
-
-      bldList.forEach(b => {
-        const item = document.createElement('div');
-        item.style.cssText = 'background:#FFFFFF; border:1.5px solid #E2E8F0; border-radius:8px; padding:10px 12px; display:flex; justify-content:space-between; align-items:center; cursor:pointer;';
-        item.innerHTML = `
-          <div>
-            <div style="font-weight:900; font-size:13.5px; color:#0F172A;">🏢 ${b.name}</div>
-            <div style="font-size:11.5px; color:#64748B;">📍 ${b.address} · 樓高 ${b.floors} 層</div>
-          </div>
-          <button class="btn btn-primary" style="padding:5px 10px; font-size:11px;">
-            掃樓名錄 (${b.company_count}家)
-          </button>
-        `;
-        item.onclick = () => openBuildingByName(b.name);
-        listContainer.appendChild(item);
-      });
-
-      document.getElementById('modalBuilding').classList.add('open');
+      const bld = ALL_BUILDINGS.find(b => b.county_id === currentCounty);
+      if (bld) openBuildingDirectory(bld.id);
     };
 
-    window.toggleVisitStatus = function(id, event) {
-      if (event) event.stopPropagation();
-      const comp = ALL_COMPANIES.find(c => c.id === id);
-      if (!comp) return;
-      comp.status = (comp.status === "已拜訪") ? "尚未拜訪" : "已拜訪";
-      renderList();
-    };
+    // --- Export CSV (中文表頭) ---
+    document.getElementById('btnExport').onclick = () => {
+      const filtered = getFilteredCompanies();
+      if (filtered.length === 0) {
+        alert('當前篩選條件下無任何企業資料可供匯出！');
+        return;
+      }
 
-    // --- CSV Export ---
-    document.getElementById('btnExport').addEventListener('click', () => {
-      let csvContent = "\\uFEFF統一編號,行政區,商辦大樓名稱,所在樓層,公司名稱,所在路段,完整地址,緯度,經度,產業類別,資本額,是否上市櫃,拜訪狀態,聯絡窗口,聯絡電話,弱電需求痛點備忘\\n";
-      currentFiltered.forEach(c => {
-        const row = [
-          c.id,
-          `"${c.district_name}"`,
-          `"${c.building_name}"`,
-          `"${c.floor}"`,
-          `"${c.name}"`,
-          `"${c.road}"`,
-          `"${c.address}"`,
-          c.lat,
-          c.lng,
-          `"${c.category_name}"`,
-          `"${c.capital_str}"`,
-          c.is_listed,
-          `"${c.status}"`,
-          `"${c.contact}"`,
-          `"${c.phone}"`,
-          `"${c.notes}"`
-        ].join(",");
-        csvContent += row + "\\n";
-      });
+      const headers = ["公司名稱", "所屬縣市", "商辦大樓", "所在樓層", "統一編號", "產業類別", "資本額規模", "上市櫃", "代表聯絡人", "電話", "完整地址", "外勤拜訪狀態", "弱電與設備規劃指引"];
+      const rows = filtered.map(c => [
+        `"${c.name}"`,
+        `"${COUNTIES[c.county_id] ? COUNTIES[c.county_id].name : c.county_id}"`,
+        `"${c.building_name}"`,
+        `"${c.floor}"`,
+        `"\t${c.tax_id}"`,
+        `"${c.category}"`,
+        `"${c.capital_str}"`,
+        `"${c.is_listed ? '是' : '否'}"`,
+        `"${c.rep_name}"`,
+        `"\t${c.phone}"`,
+        `"${c.address}"`,
+        `"${c.status}"`,
+        `"${c.low_voltage_needs.replace(/"/g, '""')}"`
+      ]);
 
+      const csvContent = "\uFEFF" + [headers.join(','), ...rows.map(r => r.join(','))].join('\\n');
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
+      const a = document.createElement('a');
       a.href = url;
-      a.download = `桃園商辦與企業地圖_弱電外勤名冊_${new Date().toISOString().slice(0,10)}.csv`;
+      a.download = `全台商辦企業名冊_${COUNTIES[currentCounty].name}_${new Date().toISOString().slice(0,10)}.csv`;
+      document.body.appendChild(a);
       a.click();
+      document.body.removeChild(a);
       URL.revokeObjectURL(url);
-    });
+    };
 
-    // --- DOMContentLoaded ---
-    document.addEventListener("DOMContentLoaded", () => {
-      initMap();
-      renderDistrictNavBar();
-      setupCategoryChips();
-      setupBuildingChips();
-      renderList();
-
-      // Search listeners
-      const searchInput = document.getElementById('searchInput');
-      const clearBtn = document.getElementById('btnClearSearch');
-      function triggerSearch() {
-        searchQuery = searchInput.value.trim();
-        clearBtn.style.display = searchQuery ? 'block' : 'none';
-        renderList();
+    // --- Floating Controls Handlers ---
+    document.getElementById('btnFitBounds').onclick = () => {
+      if (map && COUNTIES[currentCounty]) {
+        map.flyTo(COUNTIES[currentCounty].center, COUNTIES[currentCounty].zoom || 13, { duration: 1 });
       }
-      searchInput.addEventListener('input', () => {
-        clearTimeout(searchDebounceTimer);
-        searchDebounceTimer = setTimeout(triggerSearch, 100);
-      });
-      clearBtn.addEventListener('click', () => {
-        searchInput.value = '';
-        triggerSearch();
-      });
-      document.getElementById('btnDoSearch').addEventListener('click', triggerSearch);
+    };
 
-      // Capital tier listener
-      document.querySelectorAll('#capitalChips .chip-capital').forEach(btn => {
-        btn.addEventListener('click', () => {
-          document.querySelectorAll('#capitalChips .chip-capital').forEach(b => b.classList.remove('active'));
-          btn.classList.add('active');
-          activeCapitalTier = btn.getAttribute('data-tier');
-          document.getElementById('capitalCurrentLabel').innerText = btn.innerText;
-          renderList();
-        });
-      });
-
-      // Status buttons listener
-      document.querySelectorAll('#statusChips .chip-status').forEach(btn => {
-        btn.addEventListener('click', () => {
-          document.querySelectorAll('#statusChips .chip-status').forEach(b => b.className = "chip-status");
-          const st = btn.getAttribute('data-status');
-          activeStatus = st;
-          if (st === "ALL") btn.classList.add('active-all');
-          else if (st === "LISTED") btn.classList.add('active-listed');
-          else if (st === "尚未拜訪") btn.classList.add('active-pending');
-          else if (st === "洽談中") btn.classList.add('active-negotiating');
-          else if (st === "已拜訪") btn.classList.add('active-done');
-          renderList();
-        });
-      });
-
-      // Reset Filter
-      document.getElementById('btnResetFilter').addEventListener('click', () => {
-        searchQuery = '';
-        searchInput.value = '';
-        clearBtn.style.display = 'none';
-        activeCategory = 'ALL';
-        activeCapitalTier = 'ALL';
-        activeBuilding = 'ALL';
-        activeStatus = 'ALL';
-        setupCategoryChips();
-        setupBuildingChips();
-        document.querySelectorAll('#capitalChips .chip-capital').forEach(b => b.classList.remove('active'));
-        document.querySelector('[data-tier="ALL"]').classList.add('active');
-        document.querySelectorAll('#statusChips .chip-status').forEach(b => b.className = "chip-status");
-        document.querySelector('[data-status="ALL"]').classList.add('active-all');
-        renderList();
-      });
-
-      // Locate GPS
-      document.getElementById('btnLocateMe').addEventListener('click', () => {
-        if (!navigator.geolocation) {
-          alert("設備不支援定位");
-          return;
-        }
-        navigator.geolocation.getCurrentPosition(pos => {
+    document.getElementById('btnLocateMe').onclick = () => {
+      if (!navigator.geolocation) {
+        alert('您的瀏覽器不支援定位功能。');
+        return;
+      }
+      navigator.geolocation.getCurrentPosition(
+        pos => {
           const lat = pos.coords.latitude;
           const lng = pos.coords.longitude;
-          L.circleMarker([lat, lng], { radius: 8, color: '#0284C7', fillColor: '#38BDF8', fillOpacity: 0.9 }).addTo(map).bindPopup("<b>📍 您的目前位置</b>").openPopup();
-          map.flyTo([lat, lng], 16);
-        });
-      });
-
-      // Fit bounds
-      document.getElementById('btnFitBounds').addEventListener('click', () => {
-        const bounds = L.latLngBounds(currentFiltered.map(c => [c.lat, c.lng]));
-        if (bounds.isValid()) map.fitBounds(bounds, { padding: [50, 50] });
-      });
-
-      // Infinite scroll
-      const clientListContainer = document.getElementById('clientList');
-      clientListContainer.addEventListener('scroll', () => {
-        if (clientListContainer.scrollTop + clientListContainer.clientHeight >= clientListContainer.scrollHeight - 160) {
-          if (displayedCount < currentFiltered.length) {
-            displayedCount += 60;
-            renderCardsSlice(false);
+          if (map) {
+            map.flyTo([lat, lng], 17, { duration: 1 });
+            L.circleMarker([lat, lng], {
+              radius: 9,
+              fillColor: '#0284C7',
+              color: '#FFFFFF',
+              weight: 3,
+              opacity: 1,
+              fillOpacity: 0.9
+            }).addTo(map).bindPopup('📍 您目前的外勤位置').openPopup();
           }
-        }
-      });
+        },
+        err => {
+          alert('無法取得您的位置：' + err.message);
+        },
+        { enableHighAccuracy: true, timeout: 8000 }
+      );
+    };
 
-      // Modal backdrop click
-      document.getElementById('modalBuilding')?.addEventListener('click', (e) => {
-        if (e.target.id === 'modalBuilding') closeBuildingModal();
-      });
+    // --- Mobile Layout Toggle ---
+    window.setMobileView = function(view) {
+      const app = document.getElementById('appContainer');
+      app.classList.remove('mobile-list', 'mobile-split', 'mobile-map');
+      app.classList.add(`mobile-${view}`);
 
+      document.getElementById('btnViewList').classList.toggle('active', view === 'list');
+      document.getElementById('btnViewSplit').classList.toggle('active', view === 'split');
+      document.getElementById('btnViewMap').classList.toggle('active', view === 'map');
+
+      if (map) {
+        setTimeout(() => map.invalidateSize(), 200);
+      }
+    };
+
+    // --- Initial Boot Sequence (首次進入詢問預設縣市) ---
+    window.addEventListener('DOMContentLoaded', () => {
+      initMap();
+
+      // Check for default county setting
+      let defaultCounty = null;
+      try {
+        defaultCounty = localStorage.getItem('default_commercial_county');
+      } catch(e) {}
+
+      if (defaultCounty && COUNTIES[defaultCounty]) {
+        currentCounty = defaultCounty;
+        switchCounty(defaultCounty);
+      } else {
+        // First-time Entry: show onboarding modal immediately
+        currentCounty = 'taoyuan';
+        switchCounty('taoyuan');
+        openCountyModal();
+      }
+
+      // Responsive init
       if (window.innerWidth <= 768) {
         setMobileView("split");
       }
@@ -1780,7 +2147,11 @@ html_template = '''<!DOCTYPE html>
 </html>
 '''
 
+# Replace Data URIs and Database bundle
 full_html = html_template.replace('__DATABASE_BUNDLE_PLACEHOLDER__', database_json)
+full_html = full_html.replace('__B64_32_URI__', b64_32_uri)
+full_html = full_html.replace('__B64_16_URI__', b64_16_uri)
+full_html = full_html.replace('__B64_APPLE_URI__', b64_apple_uri)
 
 with open('index.html', 'w', encoding='utf-8') as f:
     f.write(full_html)
