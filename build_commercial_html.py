@@ -46,6 +46,19 @@ html_template = '''<!DOCTYPE html>
   <meta name="apple-mobile-web-app-title" content="全台商辦＆企業地圖">
   <meta name="theme-color" content="#0F172A">
 
+  <!-- SEO & Social Share Preview (LINE / FB 連結中文預覽摘要卡片) -->
+  <meta name="description" content="全台商辦＆企業地圖 · 辦公室設備與弱電系統規劃專用。完整收錄全台22縣市指標商辦大樓水牌、企業總部、共享辦公、牙醫診所與海空運物流。">
+  <meta property="og:title" content="全台商辦＆企業地圖 · 辦公室設備與弱電系統規劃">
+  <meta property="og:description" content="完整收錄全台22縣市指標商辦大樓水牌、企業總部、共享辦公、牙醫診所與海空運物流，支援掃樓水牌名冊與外勤拜訪管理。">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://gyuyu2002-jeff.github.io/commercial-office-map/">
+  <meta property="og:image" content="https://gyuyu2002-jeff.github.io/commercial-office-map/apple-touch-icon.png">
+  <meta property="og:site_name" content="全台商辦＆企業地圖">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="全台商辦＆企業地圖 · 辦公室設備與弱電系統規劃">
+  <meta name="twitter:description" content="完整收錄全台22縣市指標商辦大樓水牌、企業總部、共享辦公、牙醫診所與海空運物流，支援掃樓水牌名冊與外勤拜訪管理。">
+  <meta name="twitter:image" content="https://gyuyu2002-jeff.github.io/commercial-office-map/apple-touch-icon.png">
+
   <!-- Favicon & Bookmarks Icons (我的最愛與分頁專屬高清小圖示 - 內嵌 Data URI 保證離線與書籤即時抓取) -->
   <link rel="shortcut icon" type="image/png" href="__B64_32_URI__">
   <link rel="icon" type="image/png" sizes="32x32" href="__B64_32_URI__">
