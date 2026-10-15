@@ -1265,6 +1265,9 @@ html_template = '''<!DOCTYPE html>
       <button class="map-tool-btn active-state" id="btnToggleLabels" onclick="toggleAutoLabels()">
         🏷️ 廠名: 自動
       </button>
+      <button class="map-tool-btn" id="btnToggleLayer" onclick="cycleBasemap()">
+        🗺️ 圖資: 標準街道
+      </button>
       <button class="map-tool-btn" id="btnLocateMe">
         🎯 我的位置
       </button>
@@ -1512,6 +1515,26 @@ html_template = '''<!DOCTYPE html>
     // --- Leaflet Map Init ---
     let map = null;
     let markersLayer = L.layerGroup();
+    let baseLayers = {};
+    let currentBaseLayer = 'osm';
+
+    window.cycleBasemap = function() {
+      if (!map || !baseLayers[currentBaseLayer]) return;
+      map.removeLayer(baseLayers[currentBaseLayer]);
+      const btn = document.getElementById('btnToggleLayer');
+      if (currentBaseLayer === 'osm') {
+        currentBaseLayer = 'nlsc';
+        if (btn) btn.innerHTML = '🇹🇼 圖資: 臺灣通用';
+      } else if (currentBaseLayer === 'nlsc') {
+        currentBaseLayer = 'sat';
+        if (btn) btn.innerHTML = '🛰️ 圖資: 衛星空照';
+      } else {
+        currentBaseLayer = 'osm';
+        if (btn) btn.innerHTML = '🗺️ 圖資: 標準街道';
+      }
+      baseLayers[currentBaseLayer].addTo(map);
+      baseLayers[currentBaseLayer].bringToBack();
+    };
 
     function initMap() {
       const initialCenter = COUNTIES[currentCounty] ? COUNTIES[currentCounty].center : [24.9936, 121.3010];
@@ -1523,12 +1546,24 @@ html_template = '''<!DOCTYPE html>
         zoomControl: true
       });
 
-      // CartoDB Positron Clean Basemap
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-        attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
-        subdomains: 'abcd',
-        maxZoom: 20
-      }).addTo(map);
+      // High-quality, watermark-free basemaps (OSM / NLSC 國土測繪雲 / Esri Satellite)
+      baseLayers = {
+        osm: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          maxZoom: 19,
+          attribution: '&copy; OpenStreetMap contributors'
+        }),
+        nlsc: L.tileLayer('https://wmts.nlsc.gov.tw/wmts/EMAP/default/GoogleMapsCompatible/{z}/{y}/{x}', {
+          maxZoom: 19,
+          attribution: '&copy; 內政部國土測繪中心'
+        }),
+        sat: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+          maxZoom: 19,
+          attribution: '&copy; Esri & Earthstar Geographics'
+        })
+      };
+
+      // Set OpenStreetMap as clean default
+      baseLayers['osm'].addTo(map);
 
       markersLayer.addTo(map);
 
