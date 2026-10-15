@@ -932,7 +932,7 @@ html_template = '''<!DOCTYPE html>
     .county-modal-card {
       background: #FFFFFF;
       width: 100%;
-      max-width: 580px;
+      max-width: 680px;
       border-radius: 16px;
       box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.35);
       overflow: hidden;
@@ -957,7 +957,7 @@ html_template = '''<!DOCTYPE html>
 
     .county-modal-body {
       padding: 18px 20px;
-      max-height: 70vh;
+      max-height: 75vh;
       overflow-y: auto;
     }
 
@@ -1406,24 +1406,58 @@ html_template = '''<!DOCTYPE html>
       document.getElementById('modalCountySelect').style.display = 'none';
     };
 
+    let activeCountyRegion = 'ALL';
+
     function renderCountyGrid() {
       const grid = document.getElementById('countyGridContainer');
       grid.innerHTML = '';
 
-      Object.values(COUNTIES).forEach(c => {
+      // Region Filter Tabs Bar
+      const regionTabs = document.createElement('div');
+      regionTabs.style.cssText = 'grid-column: 1 / -1; display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px;';
+      
+      const regions = [
+        { id: 'ALL', name: '全部 (22)' },
+        { id: '北部', name: '🌲 北部 (7)' },
+        { id: '中部', name: '🌾 中部 (5)' },
+        { id: '南部', name: '🌴 南部 (5)' },
+        { id: '東部', name: '🌊 東部 (2)' },
+        { id: '離島', name: '🚢 離島 (3)' }
+      ];
+
+      regions.forEach(r => {
+        const tab = document.createElement('button');
+        const isActive = (activeCountyRegion === r.id);
+        tab.style.cssText = `padding: 5px 11px; font-size: 11.5px; font-weight: 800; border-radius: 6px; border: 1px solid ${isActive ? '#0F172A' : '#CBD5E1'}; cursor: pointer; transition: all 0.15s; background: ${isActive ? '#0F172A' : '#FFFFFF'}; color: ${isActive ? '#38BDF8' : '#475569'};`;
+        tab.textContent = r.name;
+        tab.onclick = () => {
+          activeCountyRegion = r.id;
+          renderCountyGrid();
+        };
+        regionTabs.appendChild(tab);
+      });
+
+      grid.appendChild(regionTabs);
+
+      const countiesToShow = Object.values(COUNTIES).filter(c => {
+        if (activeCountyRegion === 'ALL') return true;
+        return c.region === activeCountyRegion;
+      });
+
+      countiesToShow.forEach(c => {
         const btn = document.createElement('div');
         btn.className = `county-card-btn ${selectedCountyTemp === c.id ? 'selected' : ''}`;
         
         const bldCount = ALL_BUILDINGS.filter(b => b.county_id === c.id).length;
         const compCount = ALL_COMPANIES.filter(comp => comp.county_id === c.id).length;
-        const districtNames = (c.districts || []).map(d => d.name).slice(0, 3).join(' · ');
+        const districtNames = (c.districts || []).map(d => d.name).slice(0, 2).join(' · ');
 
         btn.innerHTML = `
           <div class="county-card-name">
             <span>${c.icon}</span>
             <span>${c.name}</span>
           </div>
-          <div class="county-card-desc">${districtNames}等</div>
+          <div class="county-card-desc">${districtNames || '主要商辦特區'}</div>
           <div class="county-card-badge">${bldCount}棟商辦 · ${compCount}家企業</div>
         `;
 
