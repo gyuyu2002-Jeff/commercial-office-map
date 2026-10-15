@@ -189,6 +189,17 @@
       border-color: #F59E0B;
     }
 
+    .btn-source {
+      background: #F0FDF4;
+      color: #166534;
+      border: 1.5px solid #BBF7D0;
+      font-weight: 800;
+    }
+    .btn-source:hover {
+      background: #DCFCE7;
+      border-color: #86EFAC;
+    }
+
     .btn-primary {
       background: var(--blue);
       color: #FFFFFF;
@@ -548,6 +559,80 @@
       align-items: center;
     }
 
+    /* Data Update & Source Bar */
+    .data-update-bar {
+      padding: 6px 14px;
+      background: #F8FAFC;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+    }
+    .update-meta {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: #475569;
+      min-width: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .update-text {
+      font-size: 11px;
+      color: #334155;
+    }
+    .update-sub {
+      color: #64748B;
+      font-size: 10.5px;
+    }
+    .status-pulse-dot {
+      width: 7px;
+      height: 7px;
+      background: #10B981;
+      border-radius: 50%;
+      flex-shrink: 0;
+      box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+      animation: pulseGreen 2s infinite;
+    }
+    @keyframes pulseGreen {
+      0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+      70% { transform: scale(1); box-shadow: 0 0 0 5px rgba(16, 185, 129, 0); }
+      100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+    }
+    .btn-source-pill {
+      background: #FFFFFF;
+      border: 1px solid #CBD5E1;
+      color: #0284C7;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 12px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      white-space: nowrap;
+      transition: all 0.15s ease;
+      flex-shrink: 0;
+    }
+    .btn-source-pill:hover {
+      background: #E0F2FE;
+      border-color: #0284C7;
+    }
+    .client-list-footer-source {
+      background: #F8FAFC;
+      border: 1px dashed #CBD5E1;
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-size: 11px;
+      color: #64748B;
+      text-align: center;
+      margin-top: 6px;
+    }
+
     .client-list {
       flex: 1;
       overflow-y: auto;
@@ -668,14 +753,13 @@
       gap: 4px;
     }
 
-    .card-low-voltage-box {
-      background: #F1F5F9;
-      border-left: 3px solid #0284C7;
-      padding: 6px 8px;
-      border-radius: 0 4px 4px 0;
+    .card-contact-row {
       font-size: 11.5px;
-      color: #334155;
-      line-height: 1.4;
+      color: #475569;
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
       margin-top: 2px;
     }
 
@@ -1319,6 +1403,11 @@
       <button class="btn" id="btnExport" title="匯出當前企業名單與弱電需求為 CSV 檔">
         <span>📤</span><span class="btn-text-full"> 匯出名單</span>
       </button>
+
+      <!-- Source Info Button -->
+      <button class="btn btn-source" id="btnSourceInfo" onclick="openSourceModal()" title="檢視最新資料更新時間與 6 大官方權威資料來源">
+        <span>🏛️</span><span class="btn-text-full"> 資料來源</span>
+      </button>
     </div>
   </header>
 
@@ -1418,6 +1507,17 @@
         <button id="btnResetFilter" style="background:none; border:none; color:var(--blue); font-size:11.5px; font-weight:700; cursor:pointer;">重設篩選</button>
       </div>
 
+      <!-- Data Update & Official Source Pill Bar -->
+      <div class="data-update-bar">
+        <div class="update-meta">
+          <span class="status-pulse-dot"></span>
+          <span class="update-text">最新更新：<strong>2026年10月15日</strong> <span class="update-sub">· 每月1號自動同步</span></span>
+        </div>
+        <button type="button" class="btn-source-pill" onclick="openSourceModal()" title="點擊檢視官方權威資料來源明細">
+          🏛️ 官方資料來源
+        </button>
+      </div>
+
       <!-- Companies List -->
       <div class="client-list" id="clientList">
         <!-- Rendered by JavaScript -->
@@ -1512,6 +1612,81 @@
       <div class="county-modal-footer">
         <button class="btn-confirm-county" onclick="confirmCountySelection()">
           確認進入商辦地圖 🚀
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Data Sources & Update Info Modal (官方資料來源與定時維護說明) -->
+  <div class="county-modal-overlay" id="modalSources" style="display:none;" onclick="if(event.target===this)closeSourceModal()">
+    <div class="county-modal-card" style="max-width: 680px;">
+      <div class="county-modal-header" style="background: linear-gradient(135deg, #0F172A 0%, #1E3A8A 100%);">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <span style="font-size:24px;">🏛️</span>
+          <div>
+            <div style="font-size:16px; font-weight:900; color:#FFFFFF;">資料來源與最新更新說明</div>
+            <div style="font-size:11.5px; color:#93C5FD;">全台商辦＆企業地圖 · 權威資料庫定期排程維護機制</div>
+          </div>
+        </div>
+        <button onclick="closeSourceModal()" style="background:none; border:none; color:#FFF; font-size:20px; cursor:pointer;" title="關閉視窗">✕</button>
+      </div>
+
+      <div class="county-modal-body" style="padding:16px 20px; max-height:75vh; overflow-y:auto;">
+        <!-- Schedule card -->
+        <div style="background:#F0FDF4; border:1px solid #BBF7D0; border-radius:10px; padding:12px 14px; margin-bottom:14px;">
+          <div style="display:flex; align-items:center; gap:8px; font-weight:800; font-size:13.5px; color:#166534; margin-bottom:6px;">
+            <span class="status-pulse-dot"></span>
+            <span>最新資料版本與定時排程維護機制</span>
+          </div>
+          <div style="font-size:12px; color:#14532D; line-height:1.6;">
+            <div>📅 <strong>最新資料更新時間：</strong>2026 年 10 月 15 日</div>
+            <div>⏰ <strong>定時排程週期：</strong>每月 1 號 09:00 AM（台灣時間）定時排程自動同步更新</div>
+            <div>🤖 <strong>自動化機制：</strong>由 GitHub Actions 排程機器人自動比對經濟部商業登記公示資料與公開上市櫃異動，校驗後自動建置部署並發布更新歷程通知。</div>
+          </div>
+        </div>
+
+        <!-- Sources list card -->
+        <div style="margin-bottom:14px;">
+          <div style="font-size:13px; font-weight:900; color:#0F172A; margin-bottom:8px; display:flex; align-items:center; gap:6px;">
+            <span>📚</span> <span>官方權威資料庫明細</span>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:8px;">
+            <div style="background:#F8FAFC; border:1px solid #E2E8F0; border-radius:8px; padding:10px 12px;">
+              <div style="font-weight:800; font-size:12.5px; color:#0F172A;">1. 經濟部商業發展署 · 全國商工登記公示資料庫</div>
+              <div style="font-size:11.5px; color:#64748B; margin-top:2px;">用途：合法設立登記公司清單、統一編號、登記現況、營業項目與分公司核准登記資訊。</div>
+            </div>
+            <div style="background:#F8FAFC; border:1px solid #E2E8F0; border-radius:8px; padding:10px 12px;">
+              <div style="font-weight:800; font-size:12.5px; color:#0F172A;">2. 財政部稅務入口網 · 營利事業公示資料查詢</div>
+              <div style="font-size:11.5px; color:#64748B; margin-top:2px;">用途：全國營業人營業登記、資本額級距規模、營業地址與統一發票使用狀態。</div>
+            </div>
+            <div style="background:#F8FAFC; border:1px solid #E2E8F0; border-radius:8px; padding:10px 12px;">
+              <div style="font-weight:800; font-size:12.5px; color:#0F172A;">3. 臺灣證券交易所 (TWSE) / 證券櫃檯買賣中心 (TPEx)</div>
+              <div style="font-size:11.5px; color:#64748B; margin-top:2px;">用途：公開上市櫃與興櫃企業名錄、股票代號、指標核心企業總部與分支據點。</div>
+            </div>
+            <div style="background:#F8FAFC; border:1px solid #E2E8F0; border-radius:8px; padding:10px 12px;">
+              <div style="font-weight:800; font-size:12.5px; color:#0F172A;">4. 指標都會區頂級商辦大樓現場進駐清冊與商辦名錄</div>
+              <div style="font-size:11.5px; color:#64748B; margin-top:2px;">用途：指標商辦大樓樓層實地走訪、現場商辦名錄紀錄、公開租賃進駐實況比對。</div>
+            </div>
+            <div style="background:#F8FAFC; border:1px solid #E2E8F0; border-radius:8px; padding:10px 12px;">
+              <div style="font-weight:800; font-size:12.5px; color:#0F172A;">5. 內政部國土測繪中心 (NLSC) 臺灣通用電子地圖 (EMAP)</div>
+              <div style="font-size:11.5px; color:#64748B; margin-top:2px;">用途：政府官方合法免授權圖資 WMTS 高精度街道圖層（無商用浮水印與版權疑慮）。</div>
+            </div>
+            <div style="background:#F8FAFC; border:1px solid #E2E8F0; border-radius:8px; padding:10px 12px;">
+              <div style="font-weight:800; font-size:12.5px; color:#0F172A;">6. OpenStreetMap Foundation (OSMF)</div>
+              <div style="font-size:11.5px; color:#64748B; margin-top:2px;">用途：國際開源社群街道地理圖資底圖與地標興趣點輔助參考。</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Disclaimer -->
+        <div style="background:#FFFBEB; border:1px solid #FDE68A; border-radius:8px; padding:10px 12px; font-size:11.5px; color:#92400E; line-height:1.5;">
+          🛡️ <strong>合法合規使用宣告：</strong>本圖資所載企業名稱、資本額、統一編號與地址均依據中華民國政府資料開放平台及公開商辦名錄彙整，不涉及未公開之個人隱私。僅供外勤拜訪動線規劃、企業設備弱電工程規劃與產業巡訪合法合理使用。
+        </div>
+      </div>
+
+      <div class="county-modal-footer" style="padding:10px 20px;">
+        <button class="btn-confirm-county" onclick="closeSourceModal()" style="padding:8px 18px; font-size:13px;">
+          我知道了 ✓
         </button>
       </div>
     </div>
@@ -2098,8 +2273,9 @@
               <span>📍</span> <span>${comp.address}</span>
             </div>
 
-            <div class="card-low-voltage-box">
-              ⚡ <strong>弱電與設備規劃指引：</strong><br>${comp.low_voltage_needs}
+            <div class="card-contact-row">
+              <span>👤 負責人: <strong>${comp.rep_name || '公司代表'}</strong></span>
+              <span>📞 電話: <a href="tel:${comp.phone}" style="color:var(--blue); font-weight:700; text-decoration:none;" onclick="event.stopPropagation()">${comp.phone}</a></span>
             </div>
 
             <div class="card-actions-row">
@@ -2132,6 +2308,22 @@
 
           listContainer.appendChild(card);
         });
+
+        const footerCard = document.createElement('div');
+        footerCard.className = 'client-list-footer-source';
+        footerCard.innerHTML = `
+          <div style="font-weight:800; color:#334155; margin-bottom:3px; display:flex; align-items:center; justify-content:center; gap:5px;">
+            <span class="status-pulse-dot"></span>
+            <span>最新更新：2026年10月15日 · 每月1號定時自動同步</span>
+          </div>
+          <div style="font-size:11px; color:#64748B; margin-bottom:6px;">
+            整合經濟部商工登記、財政部稅務公示與公開上市櫃權威名錄
+          </div>
+          <button type="button" class="btn-source-pill" onclick="openSourceModal()" style="margin:0 auto;">
+            🏛️ 查看完整 6 大官方資料來源與規範 ➔
+          </button>
+        `;
+        listContainer.appendChild(footerCard);
       }
 
       renderMapMarkers(filtered);
@@ -2246,10 +2438,7 @@
                 ${c.is_listed ? '<span class="badge-listed">上市櫃</span>' : ''}
               </div>
               <div style="font-size:11.5px; color:#64748B; margin-top:3px;">
-                ${c.cat_icon} ${c.category} · 資本額: ${c.capital_str} · 統編: ${c.tax_id}
-              </div>
-              <div style="font-size:11px; color:#0284C7; margin-top:3px;">
-                ⚡ ${c.low_voltage_needs}
+                ${c.cat_icon} ${c.category} · 資本額: ${c.capital_str} · 統編: ${c.tax_id} · 代表人: ${c.rep_name || '-'}
               </div>
             </div>
             <div>
@@ -2267,6 +2456,16 @@
       document.getElementById('modalBuilding').style.display = 'none';
     };
 
+    window.openSourceModal = function() {
+      const m = document.getElementById('modalSources');
+      if (m) m.style.display = 'flex';
+    };
+
+    window.closeSourceModal = function() {
+      const m = document.getElementById('modalSources');
+      if (m) m.style.display = 'none';
+    };
+
     window.openAllBuildingsDirectory = function() {
       const bld = ALL_BUILDINGS.find(b => b.county_id === currentCounty);
       if (bld) openBuildingDirectory(bld.id);
@@ -2280,7 +2479,7 @@
         return;
       }
 
-      const headers = ["公司名稱", "所屬縣市", "商辦大樓", "所在樓層", "統一編號", "產業類別", "資本額規模", "上市櫃", "代表聯絡人", "電話", "完整地址", "外勤拜訪狀態", "弱電與設備規劃指引"];
+      const headers = ["公司名稱", "所屬縣市", "商辦大樓", "所在樓層", "統一編號", "產業類別", "資本額規模", "上市櫃", "代表聯絡人", "電話", "完整地址", "外勤拜訪狀態"];
       const rows = filtered.map(c => [
         `"${c.name}"`,
         `"${COUNTIES[c.county_id] ? COUNTIES[c.county_id].name : c.county_id}"`,
@@ -2293,8 +2492,7 @@
         `"${c.rep_name}"`,
         `"	${c.phone}"`,
         `"${c.address}"`,
-        `"${c.status}"`,
-        `"${c.low_voltage_needs.replace(/"/g, '""')}"`
+        `"${c.status}"`
       ]);
 
       const csvContent = "﻿" + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
