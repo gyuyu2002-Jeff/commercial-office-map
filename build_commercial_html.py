@@ -775,8 +775,17 @@ html_template = '''<!DOCTYPE html>
     }
 
     /* Map Area */
-    #map {
+    .map-wrapper {
+      position: relative;
       flex: 1;
+      height: 100%;
+      min-height: 0;
+      overflow: hidden;
+      background: #E2E8F0;
+    }
+
+    #map {
+      width: 100%;
       height: 100%;
       background: #E2E8F0;
     }
@@ -847,15 +856,25 @@ html_template = '''<!DOCTYPE html>
       opacity: 1 !important;
     }
 
-    /* Map Controls Panel */
+    /* Map Controls Panel (Strictly inside map-wrapper) */
     .map-controls-panel {
       position: absolute;
       top: 14px;
       right: 14px;
-      z-index: 900;
+      z-index: 500;
       display: flex;
       flex-direction: column;
       gap: 8px;
+    }
+
+    /* Mobile Filter Accordion */
+    .mobile-filter-toggle-row {
+      display: none;
+    }
+    .advanced-filters-box {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
     }
 
     .map-tool-btn {
@@ -1113,6 +1132,62 @@ html_template = '''<!DOCTYPE html>
     }
 
     @media (max-width: 768px) {
+      header {
+        padding: 8px 12px;
+        gap: 8px;
+      }
+      .brand {
+        gap: 6px;
+        min-width: 0;
+        flex-shrink: 1;
+      }
+      .brand-logo {
+        width: 30px;
+        height: 30px;
+        font-size: 16px;
+        border-radius: 7px;
+        flex-shrink: 0;
+      }
+      .brand-title {
+        font-size: 14.5px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .brand-badge {
+        display: none !important;
+      }
+      .header-actions {
+        gap: 5px;
+        flex-wrap: nowrap;
+        flex-shrink: 0;
+      }
+      .btn {
+        padding: 5px 8px;
+        font-size: 11px;
+        gap: 3px;
+      }
+      .btn .btn-text-full {
+        display: none !important;
+      }
+      .btn-county-select {
+        padding: 5px 8px;
+        font-size: 11.5px;
+      }
+      .btn-gold {
+        padding: 5px 8px;
+        font-size: 11.5px;
+      }
+
+      .district-nav-bar {
+        padding: 5px 10px;
+        gap: 6px;
+      }
+      .district-btn {
+        padding: 4px 10px;
+        font-size: 11.5px;
+      }
+
       .sidebar {
         width: 100%;
         max-width: 100%;
@@ -1120,24 +1195,130 @@ html_template = '''<!DOCTYPE html>
 
       .mobile-view-toggle {
         display: flex;
+        padding: 8px 12px calc(8px + env(safe-area-inset-bottom, 0px)) 12px;
       }
-
-      .app-container.mobile-list #map { display: none !important; }
-      .app-container.mobile-list .sidebar { display: flex !important; flex: 1; }
-
-      .app-container.mobile-map .sidebar { display: none !important; }
-      .app-container.mobile-map #map { display: block !important; flex: 1; }
 
       .app-container.mobile-split {
         flex-direction: column;
       }
-      .app-container.mobile-split #map {
+      .app-container.mobile-split .map-wrapper {
+        display: block !important;
         height: 38%;
         flex: none;
+        order: 1;
       }
       .app-container.mobile-split .sidebar {
+        display: flex !important;
         height: 62%;
         flex: none;
+        order: 2;
+        border-top: 2px solid var(--border);
+        border-right: none;
+      }
+
+      .app-container.mobile-list .map-wrapper {
+        display: none !important;
+      }
+      .app-container.mobile-list .sidebar {
+        display: flex !important;
+        flex: 1;
+        width: 100%;
+        height: 100%;
+        border-right: none;
+      }
+
+      .app-container.mobile-map .sidebar {
+        display: none !important;
+      }
+      .app-container.mobile-map .map-wrapper {
+        display: block !important;
+        flex: 1;
+        width: 100%;
+        height: 100%;
+      }
+
+      /* Compact Horizontal Map Floating Tools on Mobile */
+      .map-controls-panel {
+        top: 8px;
+        right: 8px;
+        flex-direction: row;
+        gap: 4px;
+        background: rgba(255, 255, 255, 0.94);
+        backdrop-filter: blur(4px);
+        padding: 4px;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+      }
+      .map-tool-btn {
+        padding: 4px 7px;
+        font-size: 11.5px;
+        border-radius: 6px;
+        box-shadow: none;
+        white-space: nowrap;
+      }
+      .map-tool-btn .tool-text {
+        display: none !important;
+      }
+
+      /* Mobile Filters Accordion & Horizontal 1-row scroll */
+      .sidebar-controls {
+        padding: 8px 10px;
+        gap: 6px;
+      }
+      .search-input-wrapper input {
+        padding: 6px 28px 6px 30px;
+        font-size: 12.5px;
+      }
+      .mobile-filter-toggle-row {
+        display: block;
+      }
+      .btn-filter-toggle {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: #F1F5F9;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 6px 10px;
+        font-size: 11.5px;
+        font-weight: 700;
+        color: var(--navy);
+        cursor: pointer;
+        transition: all 0.15s ease;
+      }
+      .btn-filter-toggle:active {
+        background: #E2E8F0;
+      }
+      .advanced-filters-box {
+        gap: 8px;
+        padding: 8px;
+        background: #F8FAFC;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+      }
+      .advanced-filters-box.collapsed {
+        display: none !important;
+      }
+
+      .chips-scroll, .capital-chips-scroll, .status-chips-scroll {
+        flex-wrap: nowrap !important;
+        overflow-x: auto !important;
+        overflow-y: hidden !important;
+        max-height: none !important;
+        padding-bottom: 2px !important;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+      }
+      .chips-scroll::-webkit-scrollbar,
+      .capital-chips-scroll::-webkit-scrollbar,
+      .status-chips-scroll::-webkit-scrollbar {
+        display: none;
+      }
+
+      .client-list {
+        padding-bottom: 72px;
+        -webkit-overflow-scrolling: touch;
       }
     }
   </style>
@@ -1162,17 +1343,19 @@ html_template = '''<!DOCTYPE html>
         <span>📍</span> <span id="currentCountyDisplay">桃園市</span> <span>▼</span>
       </button>
 
+      <!-- Building Mode -->
+      <button class="btn btn-gold" id="btnBuildingMode" onclick="openAllBuildingsDirectory()" title="檢視全區商辦大樓清單與水牌">
+        <span>🏢</span> <span>水牌</span>
+      </button>
+
       <!-- Bookmark Helper Button -->
       <button class="btn btn-bookmark" id="btnBookmark" onclick="bookmarkSite()" title="將全台商辦＆企業地圖加到我的最愛 (Ctrl+D)">
-        <span>⭐</span><span> 加到最愛</span>
+        <span>⭐</span><span class="btn-text-full"> 加到最愛</span>
       </button>
 
-      <button class="btn btn-gold" id="btnBuildingMode" onclick="openAllBuildingsDirectory()" title="檢視全區商辦大樓清單與水牌">
-        <span>🏢</span><span> 大樓水牌</span>
-      </button>
-
+      <!-- Export Button -->
       <button class="btn" id="btnExport" title="匯出當前企業名單與弱電需求為 CSV 檔">
-        <span>📤</span><span> 匯出名單</span>
+        <span>📤</span><span class="btn-text-full"> 匯出名單</span>
       </button>
     </div>
   </header>
@@ -1199,7 +1382,7 @@ html_template = '''<!DOCTYPE html>
           <button id="btnDoSearch" class="btn btn-primary" style="padding: 7px 12px;">搜尋</button>
         </div>
 
-        <!-- Filter 1: 產業與高弱電客群快篩 (包含第3組4大邊界金礦標籤) -->
+        <!-- Filter 1: 產業與高弱電客群快篩 (常駐顯示，手機端單行水平滑動，超省空間) -->
         <div class="chips-group">
           <div class="chips-label">
             <span>🎯 產業客群快篩（點擊標籤秒過濾）</span>
@@ -1213,44 +1396,55 @@ html_template = '''<!DOCTYPE html>
           </div>
         </div>
 
-        <!-- Filter 2: 資本額規模階層快篩 -->
-        <div class="chips-group">
-          <div class="chips-label">
-            <span>💰 資本額規模階層</span>
-            <span id="capitalCurrentLabel" style="color:var(--blue);">全部規模</span>
-          </div>
-          <div class="capital-chips-scroll" id="capitalChips">
-            <button class="chip-capital active" data-tier="ALL">全部規模</button>
-            <button class="chip-capital" data-tier="TIER_100M">👑 1億以上</button>
-            <button class="chip-capital" data-tier="TIER_30M">💎 3,000萬~1億</button>
-            <button class="chip-capital" data-tier="TIER_5M">🏢 500萬~3,000萬</button>
-            <button class="chip-capital" data-tier="TIER_UNDER_5M">🌱 500萬以下</button>
-          </div>
+        <!-- Mobile Advanced Filter Toggle Button (手機端一鍵折疊/展開，還給名單超大視野) -->
+        <div class="mobile-filter-toggle-row">
+          <button type="button" class="btn-filter-toggle" id="btnFilterToggle" onclick="toggleAdvancedFilters()">
+            <span>⚙️ 進階篩選 (資本額 / 水牌 / 拜訪進度)</span>
+            <span id="filterToggleState" style="font-size: 11px; color: var(--blue); font-weight: 800;">展開 ▼</span>
+          </button>
         </div>
 
-        <!-- Filter 3: 商辦大樓與掃樓快篩 -->
-        <div class="chips-group">
-          <div class="chips-label">
-            <span>🏢 指標商辦大樓（點擊進入整棟掃樓名錄）</span>
-            <span style="display:flex; align-items:center; gap:8px;">
-              <span id="buildingCurrentLabel" style="color:var(--blue);">全部大樓</span>
-              <button type="button" id="btnExpandBld" onclick="toggleChipsExpand('buildingChips', 'btnExpandBld')" style="background:none; border:none; color:var(--blue); font-size:11px; font-weight:700; cursor:pointer; text-decoration:underline;">展開全部 ▼</button>
-            </span>
+        <!-- Collapsible Container for Filter 2, 3, 4 (桌機常駐展開，手機預設折疊) -->
+        <div class="advanced-filters-box collapsed" id="advancedFiltersBox">
+          <!-- Filter 2: 資本額規模階層快篩 -->
+          <div class="chips-group">
+            <div class="chips-label">
+              <span>💰 資本額規模階層</span>
+              <span id="capitalCurrentLabel" style="color:var(--blue);">全部規模</span>
+            </div>
+            <div class="capital-chips-scroll" id="capitalChips">
+              <button class="chip-capital active" data-tier="ALL">全部規模</button>
+              <button class="chip-capital" data-tier="TIER_100M">👑 1億以上</button>
+              <button class="chip-capital" data-tier="TIER_30M">💎 3,000萬~1億</button>
+              <button class="chip-capital" data-tier="TIER_5M">🏢 500萬~3,000萬</button>
+              <button class="chip-capital" data-tier="TIER_UNDER_5M">🌱 500萬以下</button>
+            </div>
           </div>
-          <div class="chips-scroll" id="buildingChips">
-            <!-- Dynamically populated -->
-          </div>
-        </div>
 
-        <!-- Filter 4: 外勤拜訪與上市櫃狀態 -->
-        <div class="chips-group">
-          <div class="chips-label">📋 拜訪進度與等級</div>
-          <div class="status-chips-scroll" id="statusChips">
-            <button class="chip-status active-all" data-status="ALL">全部 (<span id="countAll">0</span>)</button>
-            <button class="chip-status" data-status="LISTED">⭐ 上市櫃 (<span id="countListed">0</span>)</button>
-            <button class="chip-status" data-status="尚未拜訪">⏳ 尚未拜訪 (<span id="countPending">0</span>)</button>
-            <button class="chip-status" data-status="洽談中">💬 洽談中 (<span id="countNegotiating">0</span>)</button>
-            <button class="chip-status" data-status="已拜訪">✅ 已拜訪 (<span id="countDone">0</span>)</button>
+          <!-- Filter 3: 商辦大樓與掃樓快篩 -->
+          <div class="chips-group">
+            <div class="chips-label">
+              <span>🏢 指標商辦大樓（點擊進入整棟掃樓名錄）</span>
+              <span style="display:flex; align-items:center; gap:8px;">
+                <span id="buildingCurrentLabel" style="color:var(--blue);">全部大樓</span>
+                <button type="button" id="btnExpandBld" onclick="toggleChipsExpand('buildingChips', 'btnExpandBld')" style="background:none; border:none; color:var(--blue); font-size:11px; font-weight:700; cursor:pointer; text-decoration:underline;">展開全部 ▼</button>
+              </span>
+            </div>
+            <div class="chips-scroll" id="buildingChips">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+
+          <!-- Filter 4: 外勤拜訪與上市櫃狀態 -->
+          <div class="chips-group">
+            <div class="chips-label">📋 拜訪進度與等級</div>
+            <div class="status-chips-scroll" id="statusChips">
+              <button class="chip-status active-all" data-status="ALL">全部 (<span id="countAll">0</span>)</button>
+              <button class="chip-status" data-status="LISTED">⭐ 上市櫃 (<span id="countListed">0</span>)</button>
+              <button class="chip-status" data-status="尚未拜訪">⏳ 尚未拜訪 (<span id="countPending">0</span>)</button>
+              <button class="chip-status" data-status="洽談中">💬 洽談中 (<span id="countNegotiating">0</span>)</button>
+              <button class="chip-status" data-status="已拜訪">✅ 已拜訪 (<span id="countDone">0</span>)</button>
+            </div>
           </div>
         </div>
 
@@ -1269,23 +1463,25 @@ html_template = '''<!DOCTYPE html>
 
     </aside>
 
-    <!-- Map Container -->
-    <div id="map"></div>
+    <!-- Map Container & Floating Tools Wrapper (嚴格隔離，絕不遮擋側邊名單) -->
+    <div class="map-wrapper" id="mapWrapper">
+      <div id="map"></div>
 
-    <!-- Map Floating Tools -->
-    <div class="map-controls-panel">
-      <button class="map-tool-btn active-state" id="btnToggleLabels" onclick="toggleAutoLabels()">
-        🏷️ 廠名: 自動
-      </button>
-      <button class="map-tool-btn" id="btnToggleLayer" onclick="cycleBasemap()">
-        🗺️ 圖資: 標準街道
-      </button>
-      <button class="map-tool-btn" id="btnLocateMe">
-        🎯 我的位置
-      </button>
-      <button class="map-tool-btn" id="btnFitBounds">
-        🗺️ 全區視野
-      </button>
+      <!-- Map Floating Tools (Strictly within map boundary) -->
+      <div class="map-controls-panel">
+        <button class="map-tool-btn active-state" id="btnToggleLabels" onclick="toggleAutoLabels()" title="地圖縮放時是否自動顯示商辦名稱標籤">
+          <span class="tool-icon">🏷️</span><span class="tool-text"> 標籤: 自動</span>
+        </button>
+        <button class="map-tool-btn" id="btnToggleLayer" onclick="cycleBasemap()" title="切換地圖圖資 (臺灣通用電子地圖 / OSM標準 / 衛星影像)">
+          <span class="tool-icon">🗺️</span><span class="tool-text"> 圖資: 標準街道</span>
+        </button>
+        <button class="map-tool-btn" id="btnLocateMe" title="GPS 快速定位到我當前所在位置">
+          <span class="tool-icon">🎯</span><span class="tool-text"> 我的位置</span>
+        </button>
+        <button class="map-tool-btn" id="btnFitBounds" title="縮放視野至當前全區所有商辦大樓">
+          <span class="tool-icon">🔍</span><span class="tool-text"> 全區視野</span>
+        </button>
+      </div>
     </div>
 
   </div>
@@ -1844,6 +2040,7 @@ html_template = '''<!DOCTYPE html>
 
       updateCategoryChipsSelection();
       updateBuildingChipsSelection();
+      updateFilterToggleBadge(true);
       renderList();
     };
 
@@ -1893,6 +2090,8 @@ html_template = '''<!DOCTYPE html>
     function renderList() {
       const filtered = getFilteredCompanies();
       updateCounts(filtered);
+      const advBox = document.getElementById('advancedFiltersBox');
+      updateFilterToggleBadge(advBox ? advBox.classList.contains('collapsed') : true);
 
       const listContainer = document.getElementById('clientList');
       listContainer.innerHTML = '';
@@ -2181,7 +2380,33 @@ html_template = '''<!DOCTYPE html>
         },
         { enableHighAccuracy: true, timeout: 8000 }
       );
+    // --- Mobile Advanced Filters Toggle ---
+    window.toggleAdvancedFilters = function() {
+      const box = document.getElementById('advancedFiltersBox');
+      const state = document.getElementById('filterToggleState');
+      if (!box || !state) return;
+      if (box.classList.contains('collapsed')) {
+        box.classList.remove('collapsed');
+        updateFilterToggleBadge(false);
+      } else {
+        box.classList.add('collapsed');
+        updateFilterToggleBadge(true);
+      }
     };
+
+    function updateFilterToggleBadge(isCollapsed) {
+      const state = document.getElementById('filterToggleState');
+      if (!state) return;
+      let count = 0;
+      if (activeCapitalTier !== 'ALL') count++;
+      if (activeBuilding !== 'ALL') count++;
+      if (activeStatus !== 'ALL') count++;
+      if (count > 0) {
+        state.innerHTML = `<span style="background:var(--blue); color:#FFF; padding:1px 6px; border-radius:10px; font-size:10px; margin-right:4px;">${count}</span> ${isCollapsed ? '展開 ▼' : '收合 ▲'}`;
+      } else {
+        state.textContent = isCollapsed ? '展開 ▼' : '收合 ▲';
+      }
+    }
 
     // --- Mobile Layout Toggle ---
     window.setMobileView = function(view) {
