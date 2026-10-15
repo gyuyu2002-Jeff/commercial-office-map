@@ -32,7 +32,7 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: 執行商辦地圖與水牌重新編譯 (Build HTML)
+      - name: 執行商辦地圖與商辦名錄重新編譯 (Build HTML)
         run: |
           python build_commercial_html.py
 
@@ -44,11 +44,11 @@ jobs:
           if [[ -n $(git status -s) ]]; then
             echo "檢測到資料更新，準備自動 Commit & Push..."
             git add -A
-            git commit -m "chore(bot): 每月 1 號定時自動更新商辦資料與水牌發布 ($(date +'%Y-%m'))"
+            git commit -m "chore(bot): 每月 1 號定時自動更新商辦資料與商辦名錄發布 ($(date +'%Y-%m'))"
             git push origin main
             echo "✅ 已成功推送更新至 GitHub！GitHub Pages 即將自動部署。"
           else
-            echo "ℹ️ 目前所有商辦水牌資料皆為最新，無須重複提交。"
+            echo "ℹ️ 目前所有商辦名錄資料皆為最新，無須重複提交。"
           fi
 
       - name: 發送每月更新通報郵件至 wujeff520@gmail.com

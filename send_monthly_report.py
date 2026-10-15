@@ -70,7 +70,7 @@ def send_report():
         </div>
         <div class="content">
           <p>您好：</p>
-          <p>系統已於 <strong>{now_str}</strong> 完成【{SITE_NAME}】的例行資料檢查、大樓水牌重編與 GitHub Pages 自動部署發布！</p>
+          <p>系統已於 <strong>{now_str}</strong> 完成【{SITE_NAME}】的例行資料檢查、商辦大樓名錄重編與 GitHub Pages 自動部署發布！</p>
           
           <div class="stat-grid">
             <div class="stat-box">
@@ -91,7 +91,7 @@ def send_report():
             <strong>📋 本月更新重點摘要：</strong>
             <ul style="margin: 8px 0 0 0; padding-left: 20px; font-size: 13px; line-height: 1.6; color: #334155;">
               <li>全台 22 縣市指標商辦大樓名冊校驗完畢</li>
-              <li>四類高價值客群（共享辦公、牙醫診所、企業總部、物流總部）水牌狀態在線</li>
+              <li>四類高價值客群（共享辦公、牙醫診所、企業總部、物流總部）名錄狀態在線</li>
               <li>OpenStreetMap / 臺灣通用電子地圖底圖連線檢測正常（無浮水印）</li>
               <li>社群分享摘要卡片（LINE/FB Open Graph）正常運作</li>
             </ul>
