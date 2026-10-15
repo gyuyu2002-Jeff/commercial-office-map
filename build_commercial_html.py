@@ -41,21 +41,21 @@ html_template = '''<!DOCTYPE html>
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>全台商辦＆企業地圖 · 辦公室設備與弱電系統規劃</title>
+  <title>全台商辦＆企業地圖</title>
   <meta name="application-name" content="全台商辦＆企業地圖">
   <meta name="apple-mobile-web-app-title" content="全台商辦＆企業地圖">
   <meta name="theme-color" content="#0F172A">
 
   <!-- SEO & Social Share Preview (LINE / FB 連結中文預覽摘要卡片) -->
-  <meta name="description" content="全台商辦＆企業地圖 · 辦公室設備與弱電系統規劃專用。完整收錄全台22縣市指標商辦大樓水牌、企業總部、共享辦公、牙醫診所與海空運物流。">
-  <meta property="og:title" content="全台商辦＆企業地圖 · 辦公室設備與弱電系統規劃">
+  <meta name="description" content="全台商辦＆企業地圖。完整收錄全台22縣市指標商辦大樓水牌、企業總部、共享辦公、牙醫診所與海空運物流。">
+  <meta property="og:title" content="全台商辦＆企業地圖">
   <meta property="og:description" content="完整收錄全台22縣市指標商辦大樓水牌、企業總部、共享辦公、牙醫診所與海空運物流，支援掃樓水牌名冊與外勤拜訪管理。">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://gyuyu2002-jeff.github.io/commercial-office-map/">
   <meta property="og:image" content="https://gyuyu2002-jeff.github.io/commercial-office-map/apple-touch-icon.png">
   <meta property="og:site_name" content="全台商辦＆企業地圖">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="全台商辦＆企業地圖 · 辦公室設備與弱電系統規劃">
+  <meta name="twitter:title" content="全台商辦＆企業地圖">
   <meta name="twitter:description" content="完整收錄全台22縣市指標商辦大樓水牌、企業總部、共享辦公、牙醫診所與海空運物流，支援掃樓水牌名冊與外勤拜訪管理。">
   <meta name="twitter:image" content="https://gyuyu2002-jeff.github.io/commercial-office-map/apple-touch-icon.png">
 
@@ -1153,7 +1153,6 @@ html_template = '''<!DOCTYPE html>
           <span>全台商辦＆企業地圖</span>
           <span class="brand-badge" id="headerCountyBadge">桃園市</span>
         </div>
-        <div class="brand-subtitle">辦公室設備與弱電系統規劃專用 · 門禁考勤 · 監視監控 · 機房PBX · 視訊會議 · OA</div>
       </div>
     </div>
 
@@ -1328,7 +1327,7 @@ html_template = '''<!DOCTYPE html>
           <span style="font-size:26px;">🏢</span>
           <div>
             <div style="font-size:17px; font-weight:900; color:#FFFFFF;">選擇業務責任縣市</div>
-            <div style="font-size:12px; color:#94A3B8;">全台商辦＆企業地圖 · 辦公室設備與弱電系統規劃</div>
+            <div style="font-size:12px; color:#94A3B8;">全台商辦＆企業地圖</div>
           </div>
         </div>
         <button onclick="closeCountyModal()" style="background:none; border:none; color:#FFF; font-size:18px; cursor:pointer;">✕</button>
