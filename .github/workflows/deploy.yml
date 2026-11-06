@@ -6,6 +6,8 @@ on:
   pull_request:
     branches: [main]
   workflow_dispatch:
+  schedule:
+    - cron: '17 22 * * *'
 
 permissions:
   contents: read
@@ -29,12 +31,13 @@ jobs:
         with:
           node-version: '22'
       - name: Build static site
-        run: python build_commercial_html.py
+        run: python build_commercial_html.py --download
       - name: Test data build and browser logic
         run: |
           python -m unittest discover -s tests -p 'test_*.py' -v
           node --test tests/core.test.js
           node --check assets/app.js
+          node --check assets/search-worker.js
       - name: Configure Pages
         if: github.event_name != 'pull_request'
         uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b # v5

@@ -3,20 +3,20 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>全台商辦＆企業地圖｜示範資料</title>
+  <title>全台商辦＆企業地圖｜營業登記資料</title>
   <meta name="application-name" content="全台商辦＆企業地圖">
   <meta name="apple-mobile-web-app-title" content="商辦企業地圖">
   <meta name="theme-color" content="#0F172A">
-  <meta name="description" content="探索商辦地圖、篩選企業與管理本機拜訪紀錄。本站目前使用合成示範資料，非真實企業名錄，建物資訊亦尚未查核。">
-  <meta property="og:title" content="全台商辦＆企業地圖｜示範資料">
-  <meta property="og:description" content="體驗商辦篩選、地圖與本機拜訪紀錄管理。本站目前為示範資料，非真實企業名錄。">
+  <meta name="description" content="查詢全國營業中營業人的官方登記資料、行業分類與地址，管理本機拜訪紀錄。地圖顯示行政區分布，登記地址不代表實際進駐。">
+  <meta property="og:title" content="全台商辦＆企業地圖｜營業登記資料">
+  <meta property="og:description" content="以財政部開放資料查詢企業名稱、統編、登記地址、資本額與行業，搭配行政區地圖及本機拜訪紀錄。">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://gyuyu2002-jeff.github.io/commercial-office-map/">
   <meta property="og:image" content="https://gyuyu2002-jeff.github.io/commercial-office-map/icon-512.png">
   <meta property="og:site_name" content="全台商辦＆企業地圖">
   <meta name="twitter:card" content="summary">
-  <meta name="twitter:title" content="全台商辦＆企業地圖｜示範資料">
-  <meta name="twitter:description" content="商辦地圖與拜訪紀錄工具，使用合成示範資料。">
+  <meta name="twitter:title" content="全台商辦＆企業地圖｜營業登記資料">
+  <meta name="twitter:description" content="全國營業登記查詢、行政區地圖與本機拜訪紀錄工具。">
   <meta name="twitter:image" content="https://gyuyu2002-jeff.github.io/commercial-office-map/icon-512.png">
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
@@ -34,7 +34,7 @@
       <div class="brand-logo" aria-hidden="true">🏢</div>
       <div class="brand-copy">
         <h1 class="brand-title">全台商辦＆企業地圖</h1>
-        <span class="brand-subtitle">商辦探索與本機拜訪紀錄</span>
+        <span class="brand-subtitle">全國營業登記・本機拜訪紀錄</span>
       </div>
       <span class="brand-badge" id="headerCountyBadge">桃園市</span>
     </div>
@@ -42,7 +42,7 @@
       <button type="button" class="btn btn-county-select" id="btnCountySelect" onclick="openCountyModal()" aria-haspopup="dialog" aria-controls="modalCountySelect">
         <span id="currentCountyDisplay">桃園市</span><span aria-hidden="true">▾</span>
       </button>
-      <button type="button" class="btn btn-gold" id="btnBuildingMode" onclick="openAllBuildingsDirectory()" aria-haspopup="dialog" aria-controls="modalBuilding">商辦名錄</button>
+      <button type="button" class="btn btn-gold" id="btnBuildingMode" onclick="openAllBuildingsDirectory()" aria-haspopup="dialog" aria-controls="modalBuilding">登記地址名錄</button>
       <details class="more-actions">
         <summary class="btn" aria-label="更多功能">更多 <span aria-hidden="true">▾</span></summary>
         <div class="more-actions-panel">
@@ -58,21 +58,21 @@
     </div>
   </header>
 
-  <div class="demo-banner">
-    <strong>示範資料，非真實企業名錄</strong>
-    <button type="button" onclick="openSourceModal()" aria-haspopup="dialog">了解資料限制</button>
+  <div class="source-banner">
+    <strong id="bannerSummary">財政部全國營業中登記資料</strong>
+    <button type="button" onclick="openSourceModal()" aria-haspopup="dialog">資料來源</button>
   </div>
   <div id="appNotice" class="app-notice" role="status" aria-live="polite" hidden></div>
-  <nav class="district-nav-bar" id="districtNavBar" aria-label="商圈篩選"></nav>
+  <nav class="district-nav-bar" id="districtNavBar" aria-label="行政區篩選"></nav>
 
   <main class="app-container mobile-list" id="appContainer">
     <aside class="sidebar" aria-label="企業搜尋與名單">
       <div class="sidebar-controls">
         <div class="search-row" role="search">
           <div class="search-input-wrapper">
-            <label class="sr-only" for="searchInput">搜尋企業、大樓或地址</label>
+            <label class="sr-only" for="searchInput">搜尋名稱、統編或登記地址</label>
             <span class="search-icon-left" aria-hidden="true">⌕</span>
-            <input type="search" id="searchInput" placeholder="搜尋企業、大樓或地址" autocomplete="off" enterkeyhint="search">
+            <input type="search" id="searchInput" placeholder="搜尋名稱、統編或登記地址" autocomplete="off" enterkeyhint="search">
             <button type="button" id="btnClearSearch" class="search-clear-btn" aria-label="清除搜尋">×</button>
           </div>
           <button type="button" id="btnDoSearch" class="btn btn-primary">搜尋</button>
@@ -88,29 +88,29 @@
 
         <div class="mobile-filter-toggle-row">
           <button type="button" class="btn-filter-toggle" id="btnFilterToggle" onclick="toggleAdvancedFilters()" aria-expanded="false" aria-controls="advancedFiltersBox">
-            <span>進階篩選</span><span class="filter-toggle-hint">資本額・大樓・拜訪進度</span><span id="filterToggleState">展開 ▾</span>
+            <span>進階篩選</span><span class="filter-toggle-hint">資本額・地址・拜訪進度</span><span id="filterToggleState">展開 ▾</span>
           </button>
         </div>
         <div class="advanced-filters-box collapsed" id="advancedFiltersBox">
           <div class="chips-group">
-            <div class="chips-label"><span>資本額（示範）</span><span id="capitalCurrentLabel">全部規模</span></div>
+            <div class="chips-label"><span>資本額</span><span id="capitalCurrentLabel">全部規模</span></div>
             <div class="capital-chips-scroll" id="capitalChips" role="group" aria-label="資本額篩選">
               <button type="button" class="chip-capital active" data-tier="ALL">全部規模</button>
               <button type="button" class="chip-capital" data-tier="TIER_100M">1 億以上</button>
-              <button type="button" class="chip-capital" data-tier="TIER_30M">3,000 萬至 1 億</button>
-              <button type="button" class="chip-capital" data-tier="TIER_5M">500 萬至 3,000 萬</button>
-              <button type="button" class="chip-capital" data-tier="TIER_UNDER_5M">500 萬以下</button>
+              <button type="button" class="chip-capital" data-tier="TIER_30M">3,000 萬至未滿 1 億</button>
+              <button type="button" class="chip-capital" data-tier="TIER_5M">500 萬至未滿 3,000 萬</button>
+              <button type="button" class="chip-capital" data-tier="TIER_UNDER_5M">未滿 500 萬</button>
             </div>
           </div>
           <div class="chips-group">
-            <div class="chips-label"><span>商辦大樓</span><span class="filter-label-actions"><span id="buildingCurrentLabel">全部大樓</span><button type="button" id="btnExpandBld" class="text-button" onclick="toggleChipsExpand('buildingChips', 'btnExpandBld')" aria-controls="buildingChips" aria-expanded="false">展開全部 ▾</button></span></div>
-            <div class="chips-scroll" id="buildingChips" role="group" aria-label="商辦大樓篩選"></div>
+            <div class="chips-label"><span>登記地址</span><span class="filter-label-actions"><span id="buildingCurrentLabel">全部地址</span><button type="button" id="btnExpandBld" class="text-button" onclick="toggleChipsExpand('buildingChips', 'btnExpandBld')" aria-controls="buildingChips" aria-expanded="false">展開全部 ▾</button></span></div>
+            <div class="chips-scroll" id="buildingChips" role="group" aria-label="登記地址篩選"></div>
           </div>
           <div class="chips-group">
-            <div class="chips-label">拜訪進度與上市櫃示範標記</div>
+            <div class="chips-label">拜訪進度與上市櫃</div>
             <div class="status-chips-scroll" id="statusChips" role="group" aria-label="拜訪進度篩選">
               <button type="button" class="chip-status active-all" data-status="ALL">全部 (<span id="countAll">0</span>)</button>
-              <button type="button" class="chip-status" data-status="LISTED">上市櫃示範 (<span id="countListed">0</span>)</button>
+              <button type="button" class="chip-status" data-status="LISTED">上市櫃 (<span id="countListed">0</span>)</button>
               <button type="button" class="chip-status" data-status="尚未拜訪">尚未拜訪 (<span id="countPending">0</span>)</button>
               <button type="button" class="chip-status" data-status="洽談中">洽談中 (<span id="countNegotiating">0</span>)</button>
               <button type="button" class="chip-status" data-status="已拜訪">已拜訪 (<span id="countDone">0</span>)</button>
@@ -119,7 +119,7 @@
         </div>
       </div>
       <div class="client-list-header">
-        <span id="resultCountText" role="status" aria-live="polite">載入示範名單中…</span>
+        <span id="resultCountText" role="status" aria-live="polite">載入官方登記資料中…</span>
         <button type="button" id="btnResetFilter" class="text-button">重設篩選</button>
       </div>
       <div class="data-update-bar">
@@ -129,16 +129,16 @@
       <div class="client-list" id="clientList" aria-label="企業搜尋結果"></div>
     </aside>
 
-    <section class="map-wrapper" id="mapWrapper" aria-label="商辦地圖">
-      <div id="map" aria-label="示範商辦大樓位置"></div>
+    <section class="map-wrapper" id="mapWrapper" aria-label="營業人行政區分布地圖">
+      <div id="map" aria-label="行政區概覽點，非企業位置"></div>
       <div id="mapNotice" class="map-notice" role="status" hidden></div>
       <div class="map-controls-panel" role="group" aria-label="地圖工具">
-        <button type="button" class="map-tool-btn active-state" id="btnToggleLabels" onclick="toggleAutoLabels()" aria-pressed="true" aria-label="切換大樓名稱標籤"><span aria-hidden="true">標籤</span><span class="tool-text">：自動</span></button>
+        <button type="button" class="map-tool-btn active-state" id="btnToggleLabels" onclick="toggleAutoLabels()" aria-pressed="true" aria-label="切換行政區名稱標籤"><span aria-hidden="true">標籤</span><span class="tool-text">：自動</span></button>
         <button type="button" class="map-tool-btn" id="btnToggleLayer" onclick="cycleBasemap()" aria-label="切換標準、通用與衛星底圖">底圖<span class="tool-text">：標準街道</span></button>
         <button type="button" class="map-tool-btn" id="btnLocateMe" aria-label="定位我的位置">我的位置</button>
         <button type="button" class="map-tool-btn" id="btnFitBounds" aria-label="顯示全部篩選結果">全部結果</button>
       </div>
-      <div class="map-disclaimer">建物位置未查核，僅供功能展示</div>
+      <div class="map-disclaimer">行政區統計概覽點，非企業實際位置</div>
     </section>
   </main>
 
@@ -150,16 +150,16 @@
 
   <div class="bld-modal-overlay" id="modalBuilding" role="dialog" aria-modal="true" aria-labelledby="bldModalTitle" tabindex="-1">
     <div class="bld-card">
-      <div class="bld-header"><div><h2 id="bldModalTitle">商辦名錄</h2><p id="bldModalSubtitle">示範樓層與企業分佈</p></div><button type="button" class="modal-close" onclick="closeBuildingModal()" aria-label="關閉商辦名錄">×</button></div>
+      <div class="bld-header"><div><h2 id="bldModalTitle">登記地址名錄</h2><p id="bldModalSubtitle">目前篩選的登記地址，非大樓實際進駐</p></div><button type="button" class="modal-close" onclick="closeBuildingModal()" aria-label="關閉登記地址名錄">×</button></div>
       <div class="bld-list" id="bldModalList"></div>
     </div>
   </div>
 
   <div class="county-modal-overlay" id="modalCountySelect" role="dialog" aria-modal="true" aria-labelledby="countyModalTitle" tabindex="-1">
     <div class="county-modal-card">
-      <div class="county-modal-header"><div><h2 id="countyModalTitle">選擇縣市</h2><p>切換要探索的示範商辦名單</p></div><button type="button" class="modal-close" onclick="closeCountyModal()" aria-label="關閉縣市選擇">×</button></div>
+      <div class="county-modal-header"><div><h2 id="countyModalTitle">選擇縣市</h2><p>切換要查詢的營業登記資料</p></div><button type="button" class="modal-close" onclick="closeCountyModal()" aria-label="關閉縣市選擇">×</button></div>
       <div class="county-modal-body">
-        <p class="county-modal-tip">選擇縣市後載入該區資料。所有企業及樓層資訊皆為示範，建物資訊尚未查核。</p>
+        <p class="county-modal-tip">選擇縣市後載入完整營業中登記資料，可再依行政區、行業或資本額篩選。</p>
         <div class="county-grid" id="countyGridContainer"></div>
         <label class="default-county-option"><input type="checkbox" id="chkSetDefaultCounty" checked><span>記住此縣市，下次開啟自動載入</span></label>
       </div>
@@ -169,17 +169,46 @@
 
   <div class="county-modal-overlay" id="modalSources" role="dialog" aria-modal="true" aria-labelledby="sourcesModalTitle" tabindex="-1">
     <div class="county-modal-card">
-      <div class="county-modal-header"><div><h2 id="sourcesModalTitle">資料與隱私說明</h2><p>清楚區分示範內容與個人紀錄</p></div><button type="button" class="modal-close" onclick="closeSourceModal()" aria-label="關閉資料與隱私說明">×</button></div>
+      <div class="county-modal-header"><div><h2 id="sourcesModalTitle">資料與隱私說明</h2><p>官方資料範圍、更新版本與本機紀錄</p></div><button type="button" class="modal-close" onclick="closeSourceModal()" aria-label="關閉資料與隱私說明">×</button></div>
       <div class="county-modal-body source-content">
-        <section class="source-warning"><h3>示範資料，非真實企業名錄</h3><p>目前企業名稱、樓層、資本額、產業分類與上市櫃標記皆為合成示範資料，不代表真實租戶或企業現況。建物名稱、地址與位置也尚未查核，不應直接用於拜訪或商業判斷。</p><p>示範資料不提供電話、統編或負責人。正式使用前，須逐筆確認來源、查核日期與企業及據點識別資訊。</p></section>
-        <section><h3>資料版本</h3><p id="dataVersionText">載入資料版本中…</p><p>網站建置不代表資料經過查核。本站未串接政府資料自動同步服務，也不會寄送更新郵件。</p></section>
-        <section><h3>拜訪紀錄與備份</h3><p>拜訪狀態與預設縣市僅儲存在目前裝置的瀏覽器，不會上傳或跨裝置同步。清除網站資料、使用無痕模式或瀏覽器儲存失敗時，紀錄可能遺失。</p><p>請從「更多」選擇「備份拜訪紀錄」下載 JSON 檔；還原時會合併備份中的有效紀錄。請妥善保管備份檔。</p></section>
-        <section><h3>定位與外部地圖</h3><p>只有按下「我的位置」後，本站才會向瀏覽器請求定位權限；取得的位置僅用於目前地圖，不儲存於拜訪紀錄。</p><p>地圖底圖由 OpenStreetMap、國土測繪中心或 Esri 提供。載入底圖時，所選服務會收到網路請求，可能包含 IP 位址與目前地圖範圍；各服務依自身政策處理。</p><p class="source-links"><a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap 授權</a><a href="https://maps.nlsc.gov.tw/" target="_blank" rel="noopener noreferrer">國土測繪圖資</a><a href="https://www.esri.com/en-us/legal/terms/full-master-agreement" target="_blank" rel="noopener noreferrer">Esri 使用條款</a></p></section>
-        <section><h3>正式資料查核參考</h3><p>以下是可自行查詢的外部來源，本站目前未串接，也未使用這些連結為示範資料背書。</p><p class="source-links"><a href="https://findbiz.nat.gov.tw/fts/query/QueryBar/queryInit.do" target="_blank" rel="noopener noreferrer">商工登記公示資料查詢</a><a href="https://data.gov.tw/" target="_blank" rel="noopener noreferrer">政府資料開放平臺</a><a href="https://mops.twse.com.tw/" target="_blank" rel="noopener noreferrer">公開資訊觀測站</a></p></section>
+        <section class="source-overview">
+          <h3>全國營業中營業人登記資料</h3>
+          <p id="sourceSummary">載入官方資料範圍與版本中…</p>
+          <p>主來源為財政部財政資訊中心「全國營業（稅籍）登記資料集」，涵蓋來源檔案中的全國營業中營業人；停業、歇業等歷史資料不在這份資料集內。營業人包含公司、商號及其他組織，不限商辦租戶。</p>
+          <p class="source-links"><a href="https://data.gov.tw/dataset/9400" target="_blank" rel="noopener noreferrer">財政部資料集說明</a><a id="sourceDownloadLink" href="https://eip.fia.gov.tw/data/BGMOPEN1.zip" target="_blank" rel="noopener noreferrer">下載官方原始資料 ZIP</a><a href="https://data.gov.tw/license" target="_blank" rel="noopener noreferrer">政府資料開放授權條款</a></p>
+        </section>
+        <section>
+          <h3>資料版本與更新</h3>
+          <p id="dataVersionText">載入擷取時間與資料版本中…</p>
+          <p>財政部來源標示每日更新；本站顯示本次成功擷取與發布的資料版本，並非即時查詢。來源檔未提供逐筆最後異動時間。資料依原始欄位呈現，不以推測填補缺漏。</p>
+        </section>
+        <section>
+          <h3>包含哪些欄位</h3>
+          <p>財政部資料包含營業地址、統一編號、總機構統一編號、營業人名稱、資本額、設立日期、組織別、是否使用統一發票，以及最多四組行業代號與名稱。</p>
+          <p>上市及上櫃公司依統編比對臺灣證券交易所與證券櫃檯買賣中心的公司基本資料，補充有提供的股票代號、公司總機、董事長與官方網站。沒有比對到的欄位顯示未提供；董事長不等同所有組織的登記負責人。</p>
+          <p class="source-links"><a href="https://openapi.twse.com.tw/v1/opendata/t187ap03_L" target="_blank" rel="noopener noreferrer">證交所上市公司基本資料</a><a href="https://www.tpex.org.tw/openapi/v1/mopsfin_t187ap03_O" target="_blank" rel="noopener noreferrer">櫃買中心上櫃公司基本資料</a><a href="https://findbiz.nat.gov.tw/fts/query/QueryBar/queryInit.do" target="_blank" rel="noopener noreferrer">商工登記公示查詢</a></p>
+        </section>
+        <section>
+          <h3>登記地址與地圖的範圍</h3>
+          <p>「登記地址名錄」依目前篩選結果的完整原始地址分組，並未驗證大樓名稱、實際進駐租戶、營業現況或樓層使用情形。相同地址也可能是登記或代收地址。</p>
+          <p>地圖標記是行政區的概覽點與營業人筆數，不是公司座標。行政區概覽點由國土測繪中心公開界線資料計算；地址無法辨識行政區時仍保留在名單，不以假座標補點。個別地址可由卡片開啟外部地圖搜尋，請確認實際位置後再前往。</p>
+          <p class="source-links"><a href="https://data.gov.tw/dataset/7441" target="_blank" rel="noopener noreferrer">國土測繪中心鄉鎮市區界線</a></p>
+        </section>
+        <section>
+          <h3>拜訪紀錄與備份</h3>
+          <p>拜訪狀態與預設縣市僅儲存在目前裝置的瀏覽器，不會上傳或跨裝置同步。清除網站資料、使用無痕模式或瀏覽器儲存失敗時，紀錄可能遺失。</p>
+          <p>請從「更多」選擇「備份拜訪紀錄」下載 JSON 檔；還原時會合併備份中的有效紀錄。請妥善保管備份檔。本站不寄送更新郵件。</p>
+        </section>
+        <section>
+          <h3>定位與外部服務</h3>
+          <p>只有按下「我的位置」後，本站才會向瀏覽器請求定位權限；取得的位置僅用於目前地圖，不儲存於拜訪紀錄。</p>
+          <p>底圖由 OpenStreetMap、國土測繪中心或 Esri 提供。載入底圖時，所選服務會收到網路請求，可能包含 IP 位址與地圖範圍。開啟外部地圖搜尋會將選定登記地址傳給該服務，各服務依自身政策處理。</p>
+          <p class="source-links"><a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap 授權</a><a href="https://maps.nlsc.gov.tw/" target="_blank" rel="noopener noreferrer">國土測繪圖資</a><a href="https://www.esri.com/en-us/legal/terms/full-master-agreement" target="_blank" rel="noopener noreferrer">Esri 使用條款</a></p>
+        </section>
       </div>
       <div class="county-modal-footer"><button type="button" class="btn-confirm-county" onclick="closeSourceModal()">關閉說明</button></div>
     </div>
   </div>
-  <noscript><p class="noscript-notice">請啟用 JavaScript 以使用地圖、搜尋與本機拜訪紀錄。本站目前使用示範資料，非真實企業名錄。</p></noscript>
+  <noscript><p class="noscript-notice">請啟用 JavaScript 以查詢官方營業登記資料、行政區地圖與本機拜訪紀錄。</p></noscript>
 </body>
 </html>
