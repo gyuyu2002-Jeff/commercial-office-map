@@ -9,6 +9,7 @@
   const MAX_BACKUP_BYTES = 1024 * 1024;
   const MAX_STATUS_RECORDS = 20000;
   const MAX_EXPORT_ROWS = 100000;
+  const DEFAULT_CAPITAL = 'MIN_10M';
   const SOURCE_COLUMNS = ['address', 'tax_id', 'head_office_tax_id', 'name', 'capital', 'established',
     'organization', 'invoice', 'industry_code', 'industry_name', 'industry_code_1', 'industry_name_1',
     'industry_code_2', 'industry_name_2', 'industry_code_3', 'industry_name_3', 'district_id'];
@@ -107,7 +108,9 @@
   function matchesRow(row, filters, statuses, enrichment, ignoreStatus = false) {
     if (filters.district !== 'all' && row[16] !== filters.district) return false;
     if (filters.category !== 'ALL' && (String(row[8] || '').slice(0, 2) || 'UNKNOWN') !== filters.category) return false;
-    if (filters.capital !== 'ALL' && capitalTier(row[4]) !== filters.capital) return false;
+    if (filters.capital === 'MIN_10M') {
+      if (capitalTier(row[4]) === 'UNKNOWN' || Number(row[4]) < 10000000) return false;
+    } else if (filters.capital !== 'ALL' && capitalTier(row[4]) !== filters.capital) return false;
     if (filters.address && row[0] !== filters.address) return false;
     const info = enrichment[String(row[1])] || {};
     if (!ignoreStatus && filters.status !== 'ALL') {
@@ -126,7 +129,7 @@
       catalog.source.url, catalog.source.source_date || catalog.source.last_modified || ''];
   }
 
-  return { STATUSES, BACKUP_KIND, MAX_BACKUP_BYTES, MAX_STATUS_RECORDS, MAX_EXPORT_ROWS, SOURCE_COLUMNS, CSV_HEADERS,
+  return { STATUSES, BACKUP_KIND, MAX_BACKUP_BYTES, MAX_STATUS_RECORDS, MAX_EXPORT_ROWS, DEFAULT_CAPITAL, SOURCE_COLUMNS, CSV_HEADERS,
     isRecord, normalizeText, companyId, validateStatuses, validateBackup, loadStoredStatuses, mergeStatuses,
     csvCell, csvLine, csvDocument, safeURL, phoneURL, capitalTier, formatCapital, formatEstablished, matchesRow, exportRow };
 });

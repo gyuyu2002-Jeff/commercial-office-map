@@ -24,8 +24,8 @@
   <link rel="stylesheet" href="assets/vendor/leaflet/leaflet.css">
   <link rel="stylesheet" href="assets/styles.css?v=5ad1bd6a3ef9">
   <script src="assets/vendor/leaflet/leaflet.js" defer></script>
-  <script src="assets/core.js?v=df40e0622d90" defer></script>
-  <script src="assets/app.js?v=5960edf2a2ae" defer></script>
+  <script src="assets/core.js?v=73c5648edad2" defer></script>
+  <script src="assets/app.js?v=5d0e98738ef5" defer></script>
 </head>
 <body>
   <a class="skip-link" href="#searchInput">跳至搜尋與名單</a>
@@ -93,9 +93,10 @@
         </div>
         <div class="advanced-filters-box collapsed" id="advancedFiltersBox">
           <div class="chips-group">
-            <div class="chips-label"><span>資本額</span><span id="capitalCurrentLabel">全部規模</span></div>
+            <div class="chips-label"><span>資本額</span><span id="capitalCurrentLabel">1,000 萬以上</span></div>
             <div class="capital-chips-scroll" id="capitalChips" role="group" aria-label="資本額篩選">
-              <button type="button" class="chip-capital active" data-tier="ALL">全部規模</button>
+              <button type="button" class="chip-capital" data-tier="ALL">全部規模</button>
+              <button type="button" class="chip-capital active" data-tier="MIN_10M">1,000 萬以上</button>
               <button type="button" class="chip-capital" data-tier="TIER_100M">1 億以上</button>
               <button type="button" class="chip-capital" data-tier="TIER_30M">3,000 萬至未滿 1 億</button>
               <button type="button" class="chip-capital" data-tier="TIER_5M">500 萬至未滿 3,000 萬</button>
@@ -120,10 +121,10 @@
       </div>
       <div class="client-list-header">
         <span id="resultCountText" role="status" aria-live="polite">載入官方登記資料中…</span>
-        <button type="button" id="btnResetFilter" class="text-button">重設篩選</button>
+        <button type="button" id="btnResetFilter" class="text-button">恢復預設</button>
       </div>
       <div class="data-update-bar">
-        <span>拜訪紀錄僅存本機</span>
+        <span>上市櫃優先 · 拜訪紀錄僅存本機</span>
         <button type="button" class="btn-source-pill" onclick="openSourceModal()">資料說明</button>
       </div>
       <div class="client-list" id="clientList" aria-label="企業搜尋結果"></div>

@@ -14,7 +14,7 @@
   let activeModal = null, modalTrigger = null;
   const backgroundInert = new Map();
 
-  function initialFilters() { return { district: 'all', category: 'ALL', capital: 'ALL', address: '', status: 'ALL', query: '' }; }
+  function initialFilters() { return { district: 'all', category: 'ALL', capital: Core.DEFAULT_CAPITAL, address: '', status: 'ALL', query: '' }; }
   function element(tag, className, text) {
     const node = document.createElement(tag);
     if (className) node.className = className;
