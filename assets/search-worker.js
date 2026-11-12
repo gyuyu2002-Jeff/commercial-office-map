@@ -55,26 +55,22 @@ async function query(message) {
   const county = catalog.counties[message.countyId];
   if (!county) throw new Error('找不到此縣市資料。');
   const job = { id: message.id, countyId: message.countyId, controller: new AbortController(),
-    filters: { ...message.filters, query: Core.normalizeText(message.filters.query) }, statuses: Core.validateStatuses(message.statuses),
+    filters: { ...message.filters, queryTerms: Core.searchTerms(message.filters.query) }, statuses: Core.validateStatuses(message.statuses),
     matches: [], otherMatches: [], count: 0, scanned: 0, total: county.company_count, preview: [[], []], districtCounts: Object.create(null),
-    statusCounts: { ALL: 0, LISTED: 0, 尚未拜訪: 0, 洽談中: 0, 已拜訪: 0 }, sectionCounts: Object.create(null),
+    statusCounts: { ALL: 0, LISTED: 0, 尚未拜訪: 0, 洽談中: 0, 已拜訪: 0 },
     addresses: new Map(), complete: false };
   current = job;
   for (const shard of county.shards) {
     const rows = await readRows(shard, job), hits = [[], []];
     for (let index = 0; index < rows.length; index++) {
       const row = rows[index];
-      if (job.filters.district === 'all' || row[16] === job.filters.district) {
-        const section = String(row[8] || '').slice(0, 2) || 'UNKNOWN';
-        job.sectionCounts[section] = (job.sectionCounts[section] || 0) + 1;
-      }
       if (!Core.matchesRow(row, job.filters, job.statuses, catalog.enrichment, true)) continue;
       const visit = job.statuses[Core.companyId(row[1])] || Core.STATUSES[0];
       const listed = ['上市', '上櫃'].includes(catalog.enrichment[String(row[1])]?.market);
       job.statusCounts.ALL++;
       job.statusCounts[visit]++;
       if (listed) job.statusCounts.LISTED++;
-      if (job.filters.status !== 'ALL' && (job.filters.status === 'LISTED' ? !listed : visit !== job.filters.status)) continue;
+      if (job.filters.status !== 'ALL' && visit !== job.filters.status) continue;
       const priority = listed ? 0 : 1;
       hits[priority].push(index);
       job.count++;
@@ -96,7 +92,7 @@ async function query(message) {
   job.otherMatches = [];
   job.complete = true;
   send('done', { id: job.id, count: job.count, rows: job.preview.flat().slice(0, 40), statusCounts: job.statusCounts,
-    districtCounts: job.districtCounts, sectionCounts: job.sectionCounts, addressCount: job.addresses.size });
+    districtCounts: job.districtCounts, addressCount: job.addresses.size });
 }
 
 async function page(message) {

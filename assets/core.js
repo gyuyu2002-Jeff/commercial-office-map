@@ -23,6 +23,7 @@
   }
 
   function normalizeText(value) { return String(value ?? '').normalize('NFKC').toLocaleLowerCase().replace(/臺/g, '台').replace(/\s+/g, ''); }
+  function searchTerms(value) { return String(value ?? '').normalize('NFKC').trim().split(/\s+/).map(normalizeText).filter(Boolean); }
   const CN_SECTION_DIGITS = { 一: 1, 二: 2, 三: 3, 四: 4, 五: 5, 六: 6, 七: 7, 八: 8, 九: 9 };
   function buildingBaseAddress(value) {
     let text = String(value ?? '').normalize('NFKC').replace(/台/g, '臺').replace(/\s+/g, '');
@@ -109,6 +110,13 @@
     return Number(value).toLocaleString('zh-TW') + ' 元';
   }
 
+  function compactCapital(value) {
+    if (capitalTier(value) === 'UNKNOWN') return '來源未提供';
+    const amount = Number(value), unit = amount >= 100000000 ? 100000000 : amount >= 10000 ? 10000 : 1;
+    const rounded = Math.round(amount / unit * 100) / 100;
+    return `${Math.abs(rounded * unit - amount) > 0.01 ? '約 ' : ''}${rounded.toLocaleString('zh-TW')}${unit === 100000000 ? ' 億元' : unit === 10000 ? ' 萬元' : ' 元'}`;
+  }
+
   function formatEstablished(value) {
     const text = String(value ?? '').trim();
     if (!/^\d{7}$/.test(text)) return text || '來源未提供';
@@ -120,19 +128,21 @@
 
   function matchesRow(row, filters, statuses, enrichment, ignoreStatus = false) {
     if (filters.district !== 'all' && row[16] !== filters.district) return false;
-    if (filters.category !== 'ALL' && (String(row[8] || '').slice(0, 2) || 'UNKNOWN') !== filters.category) return false;
+    if (filters.category !== 'ALL' && !filters.category.split(',').includes(String(row[8] || '').slice(0, 2) || 'UNKNOWN')) return false;
     if (filters.capital === 'MIN_10M') {
       if (capitalTier(row[4]) === 'UNKNOWN' || Number(row[4]) < 10000000) return false;
     } else if (filters.capital !== 'ALL' && capitalTier(row[4]) !== filters.capital) return false;
     if (filters.address && buildingBaseAddress(row[0]) !== buildingBaseAddress(filters.address) && row[0] !== filters.address) return false;
     const info = enrichment[String(row[1])] || {};
+    if (filters.market === 'LISTED' && !['上市', '上櫃'].includes(info.market)) return false;
+    if (['上市', '上櫃'].includes(filters.market) && info.market !== filters.market) return false;
     if (!ignoreStatus && filters.status !== 'ALL') {
-      if (filters.status === 'LISTED' ? !['上市', '上櫃'].includes(info.market)
-        : (statuses[companyId(row[1])] || STATUSES[0]) !== filters.status) return false;
+      if ((statuses[companyId(row[1])] || STATUSES[0]) !== filters.status) return false;
     }
-    const query = normalizeText(filters.query);
-    return !query || [row[0], row[1], row[2], row[3], row[9], row[11], row[13], row[15], info.stock_code, info.chairperson]
-      .some(value => normalizeText(value).includes(query));
+    const terms = filters.queryTerms || searchTerms(filters.query);
+    if (!terms.length) return true;
+    const values = [row[0], row[1], row[2], row[3], row[9], row[11], row[13], row[15], info.stock_code, info.chairperson].map(normalizeText);
+    return terms.every(term => values.some(value => value.includes(term)));
   }
 
   function exportRow(row, statuses, catalog) {
@@ -143,6 +153,6 @@
   }
 
   return { STATUSES, BACKUP_KIND, MAX_BACKUP_BYTES, MAX_STATUS_RECORDS, MAX_EXPORT_ROWS, DEFAULT_CAPITAL, SOURCE_COLUMNS, CSV_HEADERS,
-    isRecord, normalizeText, buildingBaseAddress, companyId, validateStatuses, validateBackup, loadStoredStatuses, mergeStatuses,
-    csvCell, csvLine, csvDocument, safeURL, phoneURL, capitalTier, formatCapital, formatEstablished, matchesRow, exportRow };
+    isRecord, normalizeText, searchTerms, buildingBaseAddress, companyId, validateStatuses, validateBackup, loadStoredStatuses, mergeStatuses,
+    csvCell, csvLine, csvDocument, safeURL, phoneURL, capitalTier, formatCapital, compactCapital, formatEstablished, matchesRow, exportRow };
 });

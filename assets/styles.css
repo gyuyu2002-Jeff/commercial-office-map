@@ -120,6 +120,14 @@ h1, h2, h3, p { margin: 0; }
 .search-input-wrapper input::-webkit-search-cancel-button { appearance: none; }
 .search-input-wrapper input::placeholder { color: #64748B; opacity: 1; }
 .search-clear-btn { display: none; position: absolute; top: 0; right: 0; width: 42px; border: 0; background: transparent; color: var(--text-muted); font-size: 22px; }
+.search-scope-row, .search-help-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-shrink: 0; }
+.search-scope-row { font-size: 13px; font-weight: 650; }
+.search-hint { color: var(--text-muted); font-size: 12px; line-height: 1.6; }
+.active-filters { display: flex; flex-wrap: wrap; gap: 6px; flex-shrink: 0; }
+.filter-token { max-width: 100%; padding: 6px 10px; border: 1px solid #7DD3FC; border-radius: 6px; background: var(--blue-light); color: #075985; text-align: left; overflow-wrap: anywhere; font-size: 13px; }
+.filter-token:hover { background: #BAE6FD; }
+.industry-select { width: 100%; max-width: 100%; padding: 8px; border: 1px solid #94A3B8; border-radius: 6px; background: white; color: var(--text-main); font-size: 16px; }
+.industry-select + .search-hint { margin-top: 6px; }
 .chips-group { min-width: 0; flex-shrink: 0; }
 .chips-label { min-height: 32px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 4px 12px; margin-bottom: 5px; font-size: 13px; font-weight: 650; color: var(--text-muted); }
 .filter-label-actions { display: flex; gap: 8px; align-items: center; min-width: 0; }
@@ -137,6 +145,7 @@ h1, h2, h3, p { margin: 0; }
 #filterToggleState { margin-left: auto; color: var(--blue); font-size: 13px; white-space: nowrap; }
 .advanced-filters-box { display: flex; flex-direction: column; gap: 12px; padding-top: 8px; }
 .advanced-filters-box.collapsed { display: none; }
+#capitalChips, #marketChips, #statusChips { flex-wrap: wrap; }
 .client-list-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-shrink: 0; min-height: 44px; padding: 0 14px; font-size: 13px; font-weight: 650; border-bottom: 1px solid var(--border); }
 .data-update-bar { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 0 14px; flex-shrink: 0; font-size: 12px; color: var(--text-muted); border-bottom: 1px solid var(--border); background: #F8FAFC; }
 .btn-source-pill { border: 0; background: transparent; color: var(--blue); padding: 4px 6px; font-size: 12px; text-decoration: underline; text-underline-offset: 3px; }
@@ -162,6 +171,11 @@ h1, h2, h3, p { margin: 0; }
 .card-btn { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 7px 11px; border: 1px solid var(--border); border-radius: 6px; background: #F8FAFC; color: var(--blue); font-size: 13px; text-decoration: none; white-space: nowrap; }
 .card-btn:hover { background: var(--blue-light); border-color: #7DD3FC; }
 .record-note { display: block; margin-top: 8px; color: #78410F; font-size: 12px; }
+.company-details { margin-top: 8px; border-top: 1px solid var(--border); font-size: 13px; }
+.company-details summary { min-height: 44px; padding: 10px 0; color: var(--blue); font-weight: 650; }
+.company-details .card-detail + .card-detail { margin-top: 5px; }
+.empty-actions { display: flex; justify-content: center; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+.empty-actions .card-btn { white-space: normal; overflow-wrap: anywhere; }
 .empty-state { padding: 28px 16px; text-align: center; color: var(--text-muted); }
 .empty-state p + p { margin-top: 8px; }
 .list-pagination { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 8px; padding: 8px 0 16px; }

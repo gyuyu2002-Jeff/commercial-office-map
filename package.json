@@ -1,0 +1,10 @@
+{
+  "name": "commercial-office-map",
+  "private": true,
+  "scripts": {
+    "test": "node --test tests/*.test.js"
+  },
+  "devDependencies": {
+    "jsdom": "31.0.0"
+  }
+}

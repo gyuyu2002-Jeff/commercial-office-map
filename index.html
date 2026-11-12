@@ -22,10 +22,10 @@
   <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
   <link rel="stylesheet" href="assets/vendor/leaflet/leaflet.css">
-  <link rel="stylesheet" href="assets/styles.css?v=f6671e65a1fd">
+  <link rel="stylesheet" href="assets/styles.css?v=de62169f081e">
   <script src="assets/vendor/leaflet/leaflet.js" defer></script>
-  <script src="assets/core.js?v=81bea125baac" defer></script>
-  <script src="assets/app.js?v=9ca8dd3a3a2f" defer></script>
+  <script src="assets/core.js?v=217ff779564b" defer></script>
+  <script src="assets/app.js?v=693ce8c3340c" defer></script>
 </head>
 <body>
   <a class="skip-link" href="#searchInput">跳至搜尋與名單</a>
@@ -46,6 +46,7 @@
       <details class="more-actions">
         <summary class="btn" aria-label="更多功能">更多 <span aria-hidden="true">▾</span></summary>
         <div class="more-actions-panel">
+          <button type="button" class="btn" onclick="openHelpModal()" aria-haspopup="dialog" aria-controls="modalHelp">網站使用說明</button>
           <button type="button" class="btn" id="btnExport">匯出篩選名單 CSV</button>
           <button type="button" class="btn" id="btnBackup">備份拜訪紀錄</button>
           <button type="button" class="btn" id="btnRestore">還原拜訪紀錄</button>
@@ -68,30 +69,38 @@
   <main class="app-container mobile-list" id="appContainer">
     <aside class="sidebar" aria-label="商辦樓內企業搜尋與名單">
       <div class="sidebar-controls">
+        <div class="search-scope-row">
+          <span id="searchScope">搜尋桃園市已收錄的商辦企業</span>
+          <button type="button" class="text-button" onclick="openCountyModal()" aria-haspopup="dialog">切換縣市</button>
+        </div>
         <div class="search-row" role="search">
           <div class="search-input-wrapper">
-            <label class="sr-only" for="searchInput">搜尋商辦大樓地址、樓內企業名稱或統編</label>
+            <label class="sr-only" for="searchInput">搜尋公司名稱、統編、股票代號或地址</label>
             <span class="search-icon-left" aria-hidden="true">⌕</span>
-            <input type="search" id="searchInput" placeholder="搜尋商辦大樓地址、樓內企業名稱或統編" autocomplete="off" enterkeyhint="search">
+            <input type="search" id="searchInput" placeholder="公司、統編、股票代號或地址" list="searchSuggestions" aria-describedby="searchHint" autocomplete="off" enterkeyhint="search">
+            <datalist id="searchSuggestions"></datalist>
             <button type="button" id="btnClearSearch" class="search-clear-btn" aria-label="清除搜尋">×</button>
           </div>
           <button type="button" id="btnDoSearch" class="btn btn-primary">搜尋</button>
         </div>
 
-        <div class="chips-group">
-          <div class="chips-label">
-            <span>樓內產業類別</span>
-            <span class="filter-label-actions"><span id="catCurrentLabel">全部樓內企業</span><button type="button" id="btnExpandCat" class="text-button" onclick="toggleChipsExpand('categoryChips', 'btnExpandCat')" aria-controls="categoryChips" aria-expanded="false">展開全部 ▾</button></span>
-          </div>
-          <div class="chips-scroll" id="categoryChips" role="group" aria-label="樓內產業類別"></div>
+        <div class="search-help-row">
+          <p id="searchHint" class="search-hint">多個關鍵字用空白分開，例如：華懋 中壢</p>
+          <button type="button" class="text-button" onclick="openHelpModal()" aria-haspopup="dialog" aria-controls="modalHelp">使用說明</button>
         </div>
+        <div id="activeFilters" class="active-filters" role="group" aria-label="已套用條件，點選可取消"></div>
 
         <div class="mobile-filter-toggle-row">
           <button type="button" class="btn-filter-toggle" id="btnFilterToggle" onclick="toggleAdvancedFilters()" aria-expanded="false" aria-controls="advancedFiltersBox">
-            <span>進階篩選</span><span class="filter-toggle-hint">資本額・商辦大樓・拜訪進度</span><span id="filterToggleState">展開 ▾</span>
+            <span>篩選條件</span><span class="filter-toggle-hint">產業・資本額・上市櫃</span><span id="filterToggleState">展開 ▾</span>
           </button>
         </div>
         <div class="advanced-filters-box collapsed" id="advancedFiltersBox">
+          <div class="chips-group">
+            <label class="chips-label" for="industrySelect">產業分類</label>
+            <select id="industrySelect" class="industry-select"><option value="ALL">全部產業</option></select>
+            <p class="search-hint">依第一項登記行業篩選；完整行業代碼可在公司資料中查看。</p>
+          </div>
           <div class="chips-group">
             <div class="chips-label"><span>資本額</span><span id="capitalCurrentLabel">1,000 萬以上</span></div>
             <div class="capital-chips-scroll" id="capitalChips" role="group" aria-label="資本額篩選">
@@ -108,23 +117,32 @@
             <div class="chips-scroll" id="buildingChips" role="group" aria-label="商辦大樓篩選"></div>
           </div>
           <div class="chips-group">
-            <div class="chips-label">拜訪進度與上市櫃</div>
+            <div class="chips-label">上市櫃條件</div>
+            <div class="status-chips-scroll" id="marketChips" role="group" aria-label="上市櫃篩選">
+              <button type="button" class="chip active" data-market="ALL">不限上市櫃</button>
+              <button type="button" class="chip" data-market="LISTED">只看上市櫃</button>
+              <button type="button" class="chip" data-market="上市">只看上市</button>
+              <button type="button" class="chip" data-market="上櫃">只看上櫃</button>
+            </div>
+          </div>
+          <div class="chips-group">
+            <div class="chips-label">拜訪進度</div>
             <div class="status-chips-scroll" id="statusChips" role="group" aria-label="拜訪進度篩選">
-              <button type="button" class="chip-status active-all" data-status="ALL">全部樓內企業 (<span id="countAll">0</span>)</button>
-              <button type="button" class="chip-status" data-status="LISTED">上市櫃 (<span id="countListed">0</span>)</button>
+              <button type="button" class="chip-status active-all" data-status="ALL">全部進度 (<span id="countAll">0</span>)</button>
               <button type="button" class="chip-status" data-status="尚未拜訪">尚未拜訪 (<span id="countPending">0</span>)</button>
               <button type="button" class="chip-status" data-status="洽談中">洽談中 (<span id="countNegotiating">0</span>)</button>
               <button type="button" class="chip-status" data-status="已拜訪">已拜訪 (<span id="countDone">0</span>)</button>
             </div>
           </div>
+          <button type="button" class="text-button" id="btnClearFilters">清除關鍵字與全部條件（保留縣市）</button>
         </div>
       </div>
       <div class="client-list-header">
         <span id="resultCountText" role="status" aria-live="polite">載入商辦大樓資料中…</span>
-        <button type="button" id="btnResetFilter" class="text-button">恢復預設</button>
+        <button type="button" id="btnResetFilter" class="text-button" title="清除關鍵字與其他條件，回到資本額 1,000 萬以上">恢復預設</button>
       </div>
       <div class="data-update-bar">
-        <span>僅收錄商業辦公大樓內企業 · 拜訪紀錄存本機</span>
+        <span>排序：上市櫃優先 · 拜訪紀錄存本機</span>
         <button type="button" class="btn-source-pill" onclick="openSourceModal()">資料說明</button>
       </div>
       <div class="client-list" id="clientList" aria-label="商辦樓內企業搜尋結果"></div>
@@ -158,13 +176,55 @@
 
   <div class="county-modal-overlay" id="modalCountySelect" role="dialog" aria-modal="true" aria-labelledby="countyModalTitle" tabindex="-1">
     <div class="county-modal-card">
-      <div class="county-modal-header"><div><h2 id="countyModalTitle">選擇縣市</h2><p>切換要查詢的商辦大樓與樓內企業</p></div><button type="button" class="modal-close" onclick="closeCountyModal()" aria-label="關閉縣市選擇">×</button></div>
+      <div class="county-modal-header"><div><h2 id="countyModalTitle">選擇縣市</h2><p>保留關鍵字、產業、資本額、上市櫃與拜訪條件</p></div><button type="button" class="modal-close" onclick="closeCountyModal()" aria-label="關閉縣市選擇">×</button></div>
       <div class="county-modal-body">
-        <p class="county-modal-tip">選擇縣市後載入該縣市商業辦公大樓之樓內進駐企業登記資料，可再依行政區、商辦大樓、行業或資本額篩選。</p>
+        <p class="county-modal-tip">切換後搜尋新縣市已收錄的商辦企業；原行政區與大樓條件會取消，其餘條件保留。下方筆數是收錄總數，尚未套用你的搜尋條件。</p>
         <div class="county-grid" id="countyGridContainer"></div>
         <label class="default-county-option"><input type="checkbox" id="chkSetDefaultCounty" checked><span>記住此縣市，下次開啟自動載入</span></label>
       </div>
       <div class="county-modal-footer"><button type="button" class="btn-confirm-county" onclick="confirmCountySelection()">載入此縣市</button></div>
+    </div>
+  </div>
+
+  <div class="county-modal-overlay" id="modalHelp" role="dialog" aria-modal="true" aria-labelledby="helpModalTitle" tabindex="-1">
+    <div class="county-modal-card">
+      <div class="county-modal-header"><div><h2 id="helpModalTitle">網站使用說明</h2><p>從找公司、篩選到安排拜訪</p></div><button type="button" class="modal-close" onclick="closeHelpModal()" aria-label="關閉使用說明">×</button></div>
+      <div class="county-modal-body source-content">
+        <section class="source-overview">
+          <h3>開啟網站後的預設</h3>
+          <p>先顯示資本額 1,000 萬元以上（含）的企業，上市、上櫃公司排在前面，其餘符合條件的企業也會保留。縣市預設為桃園市，或你上次選擇記住的縣市。</p>
+        </section>
+        <section>
+          <h3>1. 選地區，再輸入關鍵字</h3>
+          <p>按「切換縣市」選擇範圍，再從上方列選行政區。搜尋可輸入公司名稱、統編、股票代號或地址，也可組合輸入「華懋 中壢」；每個空白分隔的關鍵字都要符合，但可分別出現在名稱或地址等不同欄位。</p>
+          <p>台／臺、全形／半形與英文字母大小寫都會自動統一比對。停止輸入後會自動搜尋，也可按 Enter 或「搜尋」。輸入建議最多顯示六家符合目前條件的真實收錄企業，可直接選取名稱。</p>
+          <p>切換縣市或行政區會保留關鍵字、產業、資本額、上市櫃與拜訪條件；原大樓條件會取消。切換縣市也會取消原行政區。</p>
+        </section>
+        <section>
+          <h3>2. 用條件縮小名單</h3>
+          <p>按「篩選條件」可選產業、資本額、商辦大樓、上市櫃及拜訪進度，選取後立即更新。產業先按大類分組，相同名稱已合併；分類依來源第一項登記行業。</p>
+          <p>例如同時選「只看上市櫃」與「尚未拜訪」，找出還沒拜訪的上市櫃企業。只顯示已由官方資料統編比對確認的上市櫃公司，不推測其他企業的市場身分。</p>
+          <p>搜尋框下方顯示已套用條件，點條件旁的「×」可單獨取消。「恢復預設」會清除關鍵字與其他條件，回到目前縣市、資本額 1,000 萬以上；「清除關鍵字與全部條件」則包含取消資本額限制。</p>
+        </section>
+        <section>
+          <h3>3. 看公司與大樓資料</h3>
+          <p>卡片先顯示統編、登記地址、資本額及主要行業。「查看完整資料」保留完整金額、設立日期、組織別、統一發票、所有登記行業與有提供的上市櫃資訊。未提供的欄位不會自行補填。</p>
+          <p>「商辦大樓名錄」依目前篩選結果的棟別地址彙整；選取大樓後，再列出同樣符合目前條件的企業。若要看該棟全部收錄企業，可取消資本額及其他條件，保留大樓地址。</p>
+          <p>「查登記地址」會開啟外部地圖搜尋。本站地圖的圓點與數量是行政區概覽，不是公司的精確位置；登記地址也不保證實際進駐情況。</p>
+        </section>
+        <section>
+          <h3>4. 記錄拜訪、匯出與備份</h3>
+          <p>在公司卡片選「尚未拜訪」「洽談中」或「已拜訪」，狀態會存於目前瀏覽器。預設的「尚未拜訪」代表尚無本機拜訪紀錄。若套用拜訪篩選，改狀態後公司可能離開目前名單。</p>
+          <p>從「更多 → 匯出篩選名單 CSV」可下載所有符合條件的結果，不限畫面上已顯示的 40 筆；請等搜尋完成。用 Excel 匯入時，統編欄設為文字，才能保留開頭的 0。</p>
+          <p>「更多 → 備份拜訪紀錄」下載 JSON；更換裝置後用「還原拜訪紀錄」合併紀錄，相同統編以備份狀態覆蓋。紀錄不會自動同步，清除瀏覽器資料前請先備份。本站沒有寄信功能。</p>
+        </section>
+        <section>
+          <h3>找不到時怎麼辦？</h3>
+          <p>先確認縣市與條件標籤，再使用結果區的按鈕取消資本額條件、清除關鍵字或切換縣市。本站只搜尋依商辦條件收錄的官方登記資料；零筆結果不代表公司不存在。資料範圍、來源日期及更新方式可在「資料說明」查看。</p>
+          <p>手機下方可切換「名單」「分割」「地圖」；找公司時先用名單，再按需要查看區域分布。</p>
+        </section>
+      </div>
+      <div class="county-modal-footer"><button type="button" class="btn-confirm-county" onclick="closeHelpModal()">開始搜尋</button></div>
     </div>
   </div>
 

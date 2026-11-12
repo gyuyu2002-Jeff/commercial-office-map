@@ -8,13 +8,13 @@
   let catalog, counties = {}, worker, currentCounty = 'taoyuan', selectedCounty = 'taoyuan', countyRegion = 'ALL';
   let filters = initialFilters(), statuses = Object.create(null), storageProblem = false, unreadableStorage = false;
   let queryId = 0, complete = false, loading = false, failed = false, loadingPage = false, exporting = false, pendingExport = false;
-  let rows = [], resultCount = 0, scanned = 0, sectionCounts = {}, districtCounts = {}, statusCounts = {}, addressCount = 0;
-  let searchTimer, selectedId = null, directoryRequestId = 0, directoryOffset = 0, directoryTimer;
+  let rows = [], resultCount = 0, scanned = 0, districtCounts = {}, statusCounts = {}, addressCount = 0;
+  let searchTimer, composing = false, selectedId = null, directoryRequestId = 0, directoryOffset = 0, directoryTimer;
   let map, markersLayer, locationMarker, baseLayers = {}, baseLayerName = 'osm', autoLabels = true;
   let activeModal = null, modalTrigger = null;
   const backgroundInert = new Map();
 
-  function initialFilters() { return { district: 'all', category: 'ALL', capital: Core.DEFAULT_CAPITAL, address: '', status: 'ALL', query: '' }; }
+  function initialFilters() { return { district: 'all', category: 'ALL', capital: Core.DEFAULT_CAPITAL, address: '', market: 'ALL', status: 'ALL', query: '' }; }
   function element(tag, className, text) {
     const node = document.createElement(tag);
     if (className) node.className = className;
@@ -67,6 +67,7 @@
   }
   function clearSearch() {
     clearTimeout(searchTimer); $('searchInput').value = ''; $('btnClearSearch').style.display = 'none';
+    $('searchSuggestions').replaceChildren();
   }
   function resetFilters() { filters = initialFilters(); selectedId = null; clearSearch(); }
 
@@ -88,6 +89,7 @@
     if (!worker || !catalog) return;
     clearTimeout(searchTimer);
     filters.query = $('searchInput').value.trim();
+    $('searchSuggestions').replaceChildren();
     $('btnClearSearch').style.display = filters.query ? 'block' : 'none';
     queryId++; complete = false; loading = true; failed = false; loadingPage = false;
     exporting = false; pendingExport = exportAfter; rows = []; resultCount = 0; scanned = 0;
@@ -103,8 +105,8 @@
     if (message.type === 'progress' || message.type === 'done') {
       rows = message.rows; resultCount = message.count; districtCounts = message.districtCounts; statusCounts = message.statusCounts;
       if (message.type === 'done') {
-        complete = true; loading = false; sectionCounts = message.sectionCounts; addressCount = message.addressCount;
-        scanned = counties[currentCounty].company_count; renderFilters();
+        complete = true; loading = false; addressCount = message.addressCount;
+        scanned = counties[currentCounty].company_count; renderFilters(); renderSuggestions();
       } else scanned = message.scanned;
       renderList(); renderMapMarkers();
       if (complete && pendingExport) { pendingExport = false; startExport(); }
@@ -131,18 +133,18 @@
 
   function switchCounty(id) {
     if (!Object.hasOwn(counties, id)) return;
-    currentCounty = id; resetFilters(); sectionCounts = {};
+    currentCounty = id; filters.district = 'all'; filters.address = ''; selectedId = null;
     setText('currentCountyDisplay', counties[id].name); setText('headerCountyBadge', counties[id].name);
     runQuery();
     if (map && counties[id].center) map.setView(counties[id].center, counties[id].zoom || 11);
   }
   function chooseFilter(key, value) {
     filters[key] = value; selectedId = null; runQuery();
-    const container = { category: 'categoryChips', address: 'buildingChips', district: 'districtNavBar' }[key];
+    const container = { address: 'buildingChips', district: 'districtNavBar' }[key];
     if (container) Array.from($(container).querySelectorAll('button')).find(node => node.dataset.value === value)?.focus({ preventScroll: true });
   }
   function switchDistrict(id) {
-    resetFilters(); filters.district = id; sectionCounts = {}; runQuery();
+    filters.district = id; filters.address = ''; selectedId = null; runQuery();
     const district = (counties[currentCounty].districts || []).find(d => d.id === id);
     if (map && district?.center) map.setView(district.center, 12);
   }
@@ -152,33 +154,101 @@
   }
   function sectionName(id) { return catalog.industry_sections?.[id] || (id === 'UNKNOWN' ? '來源未提供' : '來源分類未辨識'); }
 
+  function renderIndustries() {
+    const select = $('industrySelect'), names = new Map();
+    for (const id of Object.keys(catalog.industry_sections || {}).sort()) {
+      const name = sectionName(id);
+      if (!names.has(name)) names.set(name, []);
+      names.get(name).push(id);
+    }
+    const groups = [
+      ['農林漁牧與礦業', 1, 6], ['製造業', 8, 34], ['能源與環境', 35, 39], ['營建工程', 41, 43],
+      ['批發與零售', 45, 48], ['運輸與倉儲', 49, 54], ['住宿與餐飲', 55, 56], ['資訊與傳播', 58, 63],
+      ['金融與保險', 64, 66], ['不動產', 67, 68], ['專業服務', 69, 76], ['支援服務', 77, 82],
+      ['公共服務、教育與醫療', 83, 88], ['藝文與其他服務', 90, 99]
+    ];
+    const option = (label, ids) => {
+      const node = element('option', '', label); node.value = ids; return node;
+    };
+    select.replaceChildren(option('全部產業', 'ALL'));
+    for (const [label, min, max] of groups) {
+      const entries = [...names].filter(([, ids]) => Number(ids[0]) >= min && Number(ids[0]) <= max);
+      if (!entries.length) continue;
+      const group = element('optgroup'); group.label = label;
+      if (entries.length > 1) group.append(option(`全部${label}`, entries.flatMap(([, ids]) => ids).join(',')));
+      for (const [name, ids] of entries) { group.append(option(name, ids.join(','))); names.delete(name); }
+      select.append(group);
+    }
+    for (const [name, ids] of names) select.append(option(name, ids.join(',')));
+    select.append(option('來源未提供行業', 'UNKNOWN'));
+    select.value = filters.category;
+  }
+
+  function activeConditions() {
+    if (!catalog) return [];
+    const district = counties[currentCounty].districts.find(d => d.id === filters.district);
+    return [
+      filters.district !== 'all' && ['district', district?.name || '行政區待分類', 'all'],
+      filters.category !== 'ALL' && ['category', $('industrySelect').selectedOptions[0]?.textContent || '產業', 'ALL'],
+      filters.capital !== 'ALL' && ['capital', `資本額 ${$('capitalCurrentLabel').textContent}`, 'ALL'],
+      filters.address && ['address', filters.address, ''],
+      filters.market !== 'ALL' && ['market', filters.market === 'LISTED' ? '只看上市櫃' : `只看${filters.market}`, 'ALL'],
+      filters.status !== 'ALL' && ['status', filters.status, 'ALL']
+    ].filter(Boolean);
+  }
+
+  function renderActiveConditions() {
+    setText('searchScope', `搜尋${counties[currentCounty].name}已收錄的商辦企業`);
+    const list = $('activeFilters');
+    list.replaceChildren();
+    for (const [key, label, value] of activeConditions()) {
+      const node = button(`${label} ×`, 'filter-token', () => {
+        if (key === 'district') switchDistrict('all'); else chooseFilter(key, value);
+        $('searchInput').focus({ preventScroll: true });
+      });
+      node.setAttribute('aria-label', `取消${label}`); list.append(node);
+    }
+    if (!list.childNodes.length) list.append(element('span', 'search-hint', '目前縣市 · 未限制其他條件'));
+  }
+
+  function renderSuggestions() {
+    const list = $('searchSuggestions'); list.replaceChildren();
+    if (!filters.query) return;
+    for (const row of rows.slice(0, 6)) {
+      const info = catalog.enrichment[row[1]] || {}, option = element('option');
+      option.value = row[3]; option.label = `統編 ${row[1]}${info.stock_code ? ` · ${info.market} ${info.stock_code}` : ''} · ${row[0]}`;
+      list.append(option);
+    }
+  }
+
   function renderFilters() {
     if (!catalog) return;
     const county = counties[currentCounty];
     $('districtNavBar').replaceChildren(chip(`全${county.name} (${county.company_count.toLocaleString()})`, 'all', filters.district === 'all', 'district-btn', () => switchDistrict('all')));
     (county.districts || []).forEach(d => $('districtNavBar').append(chip(`${d.name} (${d.company_count.toLocaleString()})`, d.id,
       filters.district === d.id, 'district-btn', () => switchDistrict(d.id))));
-    $('categoryChips').replaceChildren(chip('全部樓內行業', 'ALL', filters.category === 'ALL', 'chip', () => chooseFilter('category', 'ALL')));
-    const available = Object.keys(sectionCounts).length ? Object.keys(sectionCounts) : Object.keys(catalog.industry_sections || {});
-    available.sort().forEach(id => $('categoryChips').append(chip(`${id} ${sectionName(id)}${sectionCounts[id] ? ` (${sectionCounts[id].toLocaleString()})` : ''}`, id,
-      filters.category === id, 'chip', () => chooseFilter('category', filters.category === id ? 'ALL' : id))));
+    renderIndustries();
     $('buildingChips').replaceChildren(chip('全部商辦大樓', '', !filters.address, 'chip', () => chooseFilter('address', '')));
     if (filters.address) $('buildingChips').append(chip(filters.address, filters.address, true, 'chip', () => chooseFilter('address', '')));
     $('buildingChips').append(button(complete ? `查看 ${addressCount.toLocaleString()} 棟商辦大樓` : '搜尋完成後查看商辦大樓', 'chip', openAllBuildingsDirectory));
-    setText('catCurrentLabel', filters.category === 'ALL' ? '全部樓內企業' : `${filters.category} ${sectionName(filters.category)}`);
     setText('buildingCurrentLabel', filters.address || '全部商辦大樓');
     document.querySelectorAll('#capitalChips [data-tier]').forEach(node => {
       const selected = node.dataset.tier === filters.capital;
       node.classList.toggle('active', selected); node.setAttribute('aria-pressed', String(selected));
       if (selected) setText('capitalCurrentLabel', node.textContent);
     });
-    const styles = { ALL: 'all', LISTED: 'listed', 尚未拜訪: 'pending', 洽談中: 'negotiating', 已拜訪: 'done' };
+    const styles = { ALL: 'all', 尚未拜訪: 'pending', 洽談中: 'negotiating', 已拜訪: 'done' };
     document.querySelectorAll('#statusChips [data-status]').forEach(node => {
       Object.values(styles).forEach(name => node.classList.remove(`active-${name}`));
       const selected = node.dataset.status === filters.status;
       if (selected) node.classList.add(`active-${styles[filters.status]}`);
       node.setAttribute('aria-pressed', String(selected));
     });
+    document.querySelectorAll('#marketChips [data-market]').forEach(node => {
+      const selected = node.dataset.market === filters.market;
+      node.classList.toggle('active', selected); node.setAttribute('aria-pressed', String(selected));
+    });
+    renderActiveConditions();
     updateFilterToggleBadge();
   }
 
@@ -188,34 +258,53 @@
     const card = element('article', 'company-card'); card.id = `card-${id}`; card.classList.toggle('selected', selectedId === id);
     const top = element('div', 'card-top-row'), title = element('div', 'card-name');
     title.append(button(row[3], 'card-title-button', () => selectCompany(row)));
-    top.append(title, element('span', 'badge-cat', '官方稅籍'));
+    top.append(title);
     if (info.market) top.append(element('span', 'badge-listed', `${info.market} ${info.stock_code || ''}`));
-    const identity = element('div', 'card-bld-tag', `統編 ${row[1]} · 總機構統編 ${row[2] || '來源未提供'}`);
+    const identity = element('div', 'card-bld-tag', `統編 ${row[1]}`);
     const industries = [];
     for (let index = 8; index < 16; index += 2) if (row[index] || row[index + 1]) industries.push(`${row[index]} ${row[index + 1]}`.trim());
-    card.append(top, identity, element('div', 'card-addr', row[0] || '來源未提供登記地址'),
-      detail('資本額', Core.formatCapital(row[4])), detail('設立日期', Core.formatEstablished(row[5])),
-      detail('組織別', row[6]), detail('使用統一發票', row[7]), detail('行業', industries.join('；')));
+    const full = element('details', 'company-details');
+    full.append(element('summary', '', '查看完整資料'), detail('總機構統編', row[2]), detail('資本額（完整金額）', Core.formatCapital(row[4])),
+      detail('設立日期', `${Core.formatEstablished(row[5])}（來源原值：${row[5] || '未提供'}）`), detail('組織別', row[6]),
+      detail('使用統一發票', row[7] === 'Y' ? '是（Y）' : row[7] === 'N' ? '否（N）' : row[7]), detail('全部登記行業', industries.join('；')));
+    card.append(top, identity, element('div', 'card-addr', `登記地址：${row[0] || '來源未提供'}`),
+      detail('資本額', Core.compactCapital(row[4])), detail('主要行業', row[9]));
     if (info.market) {
       const contact = element('div', 'card-contact-row');
       const phone = Core.phoneURL(info.phone);
       contact.append(element('span', '', '上市櫃公司總機：'), phone ? link(info.phone, phone, '') : element('span', '', info.phone || '來源未提供'));
-      card.append(contact, detail('董事長', info.chairperson));
+      card.append(contact); full.append(detail('董事長', info.chairperson));
       const website = Core.safeURL(info.website), source = Core.safeURL(info.source_url);
       const links = element('div', 'card-contact-row');
       if (website) links.append(link(`公司網站：${info.website_raw || info.website}`, website, ''));
       else if (info.website_raw) links.append(detail('公司網站（來源原值）', info.website_raw));
       if (source) links.append(link('上市櫃資訊來源', source, ''));
-      if (links.childNodes.length) card.append(links);
-    } else card.append(element('p', 'record-note', '電話、代表人、網站及上市櫃資訊：本來源未提供，未自行補填。'));
+      if (links.childNodes.length) full.append(links);
+    } else full.append(element('p', 'record-note', '電話、代表人、網站及上市櫃資訊：本來源未提供，未自行補填。'));
     const actions = element('div', 'card-actions-row'), label = element('label', 'status-select-wrapper', '拜訪紀錄 ');
     const select = element('select', 'status-select'); select.setAttribute('aria-label', `${row[3]}的拜訪紀錄`);
     Core.STATUSES.forEach(status => { const option = element('option', '', status); option.value = status; select.append(option); });
     select.value = statuses[id] || Core.STATUSES[0];
     select.addEventListener('change', event => updateCompanyStatus(id, event.target.value)); label.append(select); actions.append(label);
     if (row[0]) actions.append(link('查登記地址', `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(row[0])}`, 'card-btn'));
-    card.append(element('p', 'record-note', '登記地址不代表實際營業或進駐位置；總機及董事長資訊僅限統編相符的上市櫃公司。'), actions);
+    full.append(element('p', 'record-note', '主要行業依來源第一項登記行業顯示。登記地址不代表實際營業或進駐位置；總機及董事長資訊僅限統編相符的上市櫃公司。'));
+    card.append(actions, full);
     return card;
+  }
+
+  function emptyResults() {
+    const node = element('div', 'empty-state'), conditions = activeConditions();
+    node.append(element('strong', '', '目前條件下沒有找到企業'),
+      element('p', '', `搜尋範圍：${counties[currentCounty].name}${conditions.length ? ' · ' + conditions.map(([, label]) => label).join(' · ') : ''}`));
+    if (filters.query) node.append(element('p', '', `關鍵字：「${filters.query}」`));
+    node.append(element('p', '', '僅搜尋本站已收錄的商辦企業；沒有結果不代表公司不存在。可逐一放寬條件：'));
+    const actions = element('div', 'empty-actions');
+    for (const [key, label, value] of conditions) actions.append(button(`取消${label}`, 'card-btn', () => {
+      if (key === 'district') switchDistrict('all'); else chooseFilter(key, value);
+    }));
+    if (filters.query) actions.append(button('清除關鍵字', 'card-btn', () => { clearSearch(); runQuery(); }));
+    actions.append(button('切換縣市，保留關鍵字', 'card-btn', openCountyModal));
+    node.append(actions); return node;
   }
 
   function renderList() {
@@ -224,13 +313,13 @@
       : failed ? `搜尋未完成 · 暫時符合 ${resultCount.toLocaleString()} 筆`
         : `符合 ${resultCount.toLocaleString()} 筆 · 已顯示 ${rows.length.toLocaleString()} 筆`);
     setText('mobileCount', resultCount.toLocaleString());
-    [['countAll', 'ALL'], ['countListed', 'LISTED'], ['countPending', '尚未拜訪'], ['countNegotiating', '洽談中'], ['countDone', '已拜訪']]
+    [['countAll', 'ALL'], ['countPending', '尚未拜訪'], ['countNegotiating', '洽談中'], ['countDone', '已拜訪']]
       .forEach(([id, key]) => setText(id, (statusCounts[key] || 0).toLocaleString()));
     const list = $('clientList'), scroller = window.innerWidth <= 768 ? document.querySelector('.sidebar') : list;
     const scrollTop = scroller?.scrollTop || 0;
     list.replaceChildren();
-    if (!rows.length) list.append(element('p', 'empty-state', loading ? '正在讀取完整縣市資料，請稍候…'
-      : failed ? '資料尚未完整載入，請使用上方提示重試。' : '沒有符合條件的資料。可重設篩選或更換縣市。'));
+    if (!rows.length) list.append(loading || failed ? element('p', 'empty-state', loading ? '正在搜尋所選縣市，請稍候…'
+      : '資料尚未完整載入，請使用上方提示重試。') : emptyResults());
     const fragment = document.createDocumentFragment(); rows.forEach(row => fragment.append(companyCard(row))); list.append(fragment);
     if (loading) list.append(element('p', 'record-note', '以上是暫時結果；所有分片完成後才能匯出完整清單。'));
     if (complete && rows.length < resultCount) {
@@ -388,7 +477,7 @@
   function openAllBuildingsDirectory() {
     if (!complete) { notice('請等完整搜尋完成後再開啟商辦大樓名錄。'); return; }
     setText('bldModalTitle', `${counties[currentCounty].name} · 商辦大樓名錄`);
-    setText('bldModalSubtitle', `目前篩選中的 ${addressCount.toLocaleString()} 棟商業辦公大樓（依正規化棟別地址彙整）；點選即可查看整棟進駐企業。`);
+    setText('bldModalSubtitle', `目前條件符合 ${addressCount.toLocaleString()} 棟大樓地址；點選後查看該棟符合相同條件的登記企業。`);
     const list = $('bldModalList'), search = element('input', 'directory-search');
     search.type = 'search'; search.id = 'directorySearch'; search.placeholder = '搜尋商辦大樓地址'; search.setAttribute('aria-label', '搜尋目前名錄中的商辦大樓地址');
     search.addEventListener('input', () => { clearTimeout(directoryTimer); directoryTimer = setTimeout(() => requestDirectory(0), 150); });
@@ -454,7 +543,7 @@
 
   function updateFilterToggleBadge() {
     const collapsed = $('advancedFiltersBox')?.classList.contains('collapsed');
-    const count = Number(filters.capital !== 'ALL') + Number(Boolean(filters.address)) + Number(filters.status !== 'ALL');
+    const count = activeConditions().filter(([key]) => key !== 'district').length;
     setText('filterToggleState', `${count ? `${count} 項條件 · ` : ''}${collapsed ? '展開 ▼' : '收合 ▲'}`);
     $('btnFilterToggle')?.setAttribute('aria-expanded', String(!collapsed));
   }
@@ -472,11 +561,19 @@
   }
 
   function wireEvents() {
-    $('searchInput').addEventListener('input', () => { clearTimeout(searchTimer); searchTimer = setTimeout(() => runQuery(), 150); });
-    $('searchInput').addEventListener('keydown', event => { if (event.key === 'Enter') { event.preventDefault(); runQuery(); } });
+    const scheduleSearch = () => { clearTimeout(searchTimer); if (!composing) searchTimer = setTimeout(() => runQuery(), 300); };
+    $('searchInput').addEventListener('compositionstart', () => { composing = true; clearTimeout(searchTimer); });
+    $('searchInput').addEventListener('compositionend', () => { composing = false; scheduleSearch(); });
+    $('searchInput').addEventListener('input', event => { if (!event.isComposing) scheduleSearch(); });
+    $('searchInput').addEventListener('keydown', event => {
+      if (event.key === 'Enter' && !event.isComposing && !composing && event.keyCode !== 229) { event.preventDefault(); runQuery(); }
+    });
     $('btnDoSearch').addEventListener('click', () => runQuery());
     $('btnClearSearch').addEventListener('click', () => { clearSearch(); runQuery(); $('searchInput').focus(); });
-    $('btnResetFilter').addEventListener('click', () => { resetFilters(); sectionCounts = {}; runQuery(); });
+    $('btnResetFilter').addEventListener('click', () => { resetFilters(); runQuery(); });
+    $('btnClearFilters').addEventListener('click', () => { resetFilters(); filters.capital = 'ALL'; runQuery(); });
+    $('industrySelect').addEventListener('change', event => chooseFilter('category', event.target.value));
+    document.querySelectorAll('#marketChips [data-market]').forEach(node => node.addEventListener('click', () => chooseFilter('market', node.dataset.market)));
     document.querySelectorAll('#capitalChips [data-tier]').forEach(node => node.addEventListener('click', () => chooseFilter('capital', node.dataset.tier)));
     document.querySelectorAll('#statusChips [data-status]').forEach(node => node.addEventListener('click', () => chooseFilter('status', node.dataset.status)));
     $('btnExport').addEventListener('click', exportCSV); $('btnBackup')?.addEventListener('click', backupRecords);
@@ -503,7 +600,7 @@
       else if (event.shiftKey && (document.activeElement === first || !activeModal.contains(document.activeElement))) { event.preventDefault(); last.focus(); }
       else if (!event.shiftKey && (document.activeElement === last || !activeModal.contains(document.activeElement))) { event.preventDefault(); first.focus(); }
     });
-    ['modalBuilding', 'modalCountySelect', 'modalSources'].forEach(id => $(id)?.addEventListener('click', event => { if (event.target === $(id)) closeModal(id); }));
+    ['modalBuilding', 'modalCountySelect', 'modalSources', 'modalHelp'].forEach(id => $(id)?.addEventListener('click', event => { if (event.target === $(id)) closeModal(id); }));
   }
 
   async function boot() {
@@ -534,6 +631,7 @@
   Object.assign(window, { switchCounty, updateCompanyStatus, openCountyModal, confirmCountySelection, openBuildingDirectory, openAllBuildingsDirectory,
     closeCountyModal: () => closeModal('modalCountySelect'), closeBuildingModal: () => closeModal('modalBuilding'),
     openSourceModal: () => openModal('modalSources'), closeSourceModal: () => closeModal('modalSources'),
+    openHelpModal: () => openModal('modalHelp'), closeHelpModal: () => closeModal('modalHelp'),
     cycleBasemap, toggleAutoLabels, toggleAdvancedFilters, toggleChipsExpand, setMobileView,
     bookmarkSite: () => { notice(/Mac|iPhone|iPad/.test(navigator.platform) ? '按 ⌘ + D 加入書籤；手機可由分享選單加入主畫面。' : '按 Ctrl + D 加入書籤；手機可由瀏覽器選單加入主畫面。'); closeMenus(); } });
   function start() {

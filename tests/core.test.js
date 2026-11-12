@@ -8,7 +8,7 @@ const Core = require('../assets/core.js');
 const version = 'a'.repeat(64);
 const backup = statuses => ({ schema_version: 1, kind: Core.BACKUP_KIND,
   dataset_version: version, exported_at: '2026-11-06T12:00:00.000Z', statuses });
-const filters = () => ({ district: 'all', category: 'ALL', capital: 'ALL', address: '', status: 'ALL', query: '' });
+const filters = () => ({ district: 'all', category: 'ALL', capital: 'ALL', address: '', market: 'ALL', status: 'ALL', query: '' });
 const row = (index, district = 'D1') => ['臺北市中正區忠孝路１號', String(index + 1).padStart(8, '0'), '',
   `實際來源公司 ${index}`, '0', '1130101', '有限公司', 'Y', '620100', '電腦程式設計業', '', '', '', '', '', '', district];
 
@@ -63,7 +63,7 @@ test('capital zero is factual, unknown remains unknown, and official metadata is
   assert.equal(Core.formatEstablished('1130101'), '2024-01-01');
   assert.equal(Core.formatEstablished('1130231'), '1130231');
   const record = row(1);
-  assert.equal(Core.matchesRow(record, { ...filters(), status: 'LISTED' }, {}, {}), false);
+  assert.equal(Core.matchesRow(record, { ...filters(), market: 'LISTED' }, {}, {}), false);
   assert.equal(Core.matchesRow(record, { ...filters(), status: '已拜訪' }, { tax_00000002: '已拜訪' }, {}), true);
   record[8] = '';
   assert.equal(Core.matchesRow(record, { ...filters(), category: 'UNKNOWN' }, {}, {}), true);
@@ -80,6 +80,35 @@ test('default capital threshold includes exactly ten million and excludes lower 
     assert.equal(Core.matchesRow(record, { ...filters(), capital: 'MIN_10M' }, {}, { [record[1]]: { market: '上市' } }),
       accepted, `listed company must meet the same capital requirement: ${JSON.stringify(capital)}`);
   }
+});
+
+test('space-separated keywords must each match, including across company, address and stock code', () => {
+  const record = row(0); record[0] = '桃園市中壢區中山路８８號１７樓'; record[3] = '華懋科技股份有限公司';
+  const info = { [record[1]]: { market: '上市', stock_code: '5292' } };
+  for (const query of ['華懋', '華懋 中壢', '中壢　華懋', '５２９２ 中山路88號', '  華懋\t科技  ', '00000001 中壢']) {
+    assert.equal(Core.matchesRow(record, { ...filters(), query }, {}, info), true, query);
+  }
+  for (const query of ['華懋 台中', '華懋 中壢 不存在', '5293 中壢']) {
+    assert.equal(Core.matchesRow(record, { ...filters(), query }, {}, info), false, query);
+  }
+});
+
+test('merged industry labels accept every mapped primary code, not an unrelated secondary code', () => {
+  const record = row(0);
+  for (const code of ['451000', '461000']) {
+    record[8] = code;
+    assert.equal(Core.matchesRow(record, { ...filters(), category: '45,46' }, {}, {}), true);
+  }
+  record[8] = '471000'; record[10] = '451000';
+  assert.equal(Core.matchesRow(record, { ...filters(), category: '45,46' }, {}, {}), false);
+});
+
+test('compact capital marks rounding and preserves exact source amounts for details and CSV', () => {
+  assert.equal(Core.compactCapital('463188000'), '約 4.63 億元');
+  assert.equal(Core.compactCapital('10000000'), '1,000 萬元');
+  assert.equal(Core.compactCapital('0'), '0 元');
+  assert.equal(Core.compactCapital(''), '來源未提供');
+  assert.equal(Core.formatCapital('463188000'), '463,188,000 元');
 });
 
 test('safe links reject executable URLs while CSV preserves raw official website text', () => {
@@ -224,6 +253,30 @@ test('worker applies visit status, normalized search, and real address grouping 
   await h.send({ type: 'directory', id: 2, requestId: 1, offset: 0, query: '忠孝路1號' });
   const directory = h.messages.find(message => message.type === 'directory');
   assert.equal(directory.total, 1); assert.equal(directory.addresses[0].count, 2);
+});
+
+test('worker combines multiword search, market and visit filters consistently in counts, pages and export', async () => {
+  const h = workerHarness(), records = [row(0), row(1), row(2), row(3)];
+  records.forEach(record => { record[4] = '10000000'; });
+  h.catalog.enrichment[records[0][1]] = { market: '上市' };
+  h.catalog.enrichment[records[1][1]] = { market: '上櫃' };
+  h.catalog.enrichment[records[2][1]] = { market: '上市' };
+  const statuses = { tax_00000001: '已拜訪' };
+  h.addCounty('taipei', [records.slice(0, 2), records.slice(2)]); await h.initialize();
+  for (const [market, ids, allCount] of [['LISTED', ['00000002', '00000003'], 3], ['上市', ['00000003'], 2], ['上櫃', ['00000002'], 1]]) {
+    await h.send({ type: 'query', id: 10, countyId: 'taipei', filters: { ...filters(), capital: 'MIN_10M', market, status: '尚未拜訪', query: '來源公司 台北' }, statuses });
+    const done = h.messages.filter(message => message.type === 'done').at(-1);
+    assert.deepEqual(done.rows.map(record => record[1]), ids);
+    assert.equal(done.count, ids.length); assert.equal(done.statusCounts.ALL, allCount);
+    await h.send({ type: 'page', id: 10, offset: 0 });
+    assert.deepEqual(h.messages.filter(message => message.type === 'page').at(-1).rows.map(record => record[1]), ids);
+    await h.send({ type: 'export', id: 10 });
+    const exported = h.messages.filter(message => message.type === 'export').at(-1);
+    assert.equal(exported.count, ids.length);
+    const text = await exported.blob.text();
+    assert.ok(!text.includes('"00000001"') && !text.includes('"00000004"'));
+    ids.forEach(id => assert.ok(text.includes(`"${id}"`)));
+  }
 });
 
 test('worker rejects mixed-version shards, missing shards, and count mismatches without claiming completion', async () => {
