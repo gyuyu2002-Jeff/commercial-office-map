@@ -80,7 +80,7 @@ async function query(message) {
       job.count++;
       if (job.preview[priority].length < 40) job.preview[priority].push(row);
       job.districtCounts[row[16]] = (job.districtCounts[row[16]] || 0) + 1;
-      const address = String(row[0] || '');
+      const address = Core.buildingBaseAddress(String(row[0] || ''));
       job.addresses.set(address, (job.addresses.get(address) || 0) + 1);
     }
     if (hits[0].length) job.matches.push({ shard, indices: Uint32Array.from(hits[0]) });

@@ -46,6 +46,12 @@ test('search normalizes full-width digits, 台/臺 and embedded address spacing'
   const record = row(1);
   assert.equal(Core.matchesRow(record, { ...filters(), query: '台北市中正區忠孝路1號' }, {}, {}), true);
   assert.equal(Core.matchesRow(record, { ...filters(), query: '00000002' }, {}, {}), true);
+  assert.equal(Core.buildingBaseAddress('桃園市桃園區同德里中正路１０７１號１４樓之６'), '桃園市桃園區中正路1071號');
+  assert.equal(Core.buildingBaseAddress('桃園市中壢區中央西路一段１號３樓'), '桃園市中壢區中央西路1段1號');
+  assert.equal(Core.buildingBaseAddress('連江縣南竿鄉介壽村256號2樓'), '連江縣南竿鄉介壽村256號');
+  const towerTenant = row(9);
+  towerTenant[0] = '桃園市桃園區同德里中正路１０７１號１４樓之６';
+  assert.equal(Core.matchesRow(towerTenant, { ...filters(), address: '桃園市桃園區中正路1071號' }, {}, {}), true);
 });
 
 test('capital zero is factual, unknown remains unknown, and official metadata is never synthesized', () => {

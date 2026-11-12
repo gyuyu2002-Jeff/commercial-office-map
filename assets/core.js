@@ -23,6 +23,19 @@
   }
 
   function normalizeText(value) { return String(value ?? '').normalize('NFKC').toLocaleLowerCase().replace(/臺/g, '台').replace(/\s+/g, ''); }
+  const CN_SECTION_DIGITS = { 一: 1, 二: 2, 三: 3, 四: 4, 五: 5, 六: 6, 七: 7, 八: 8, 九: 9 };
+  function buildingBaseAddress(value) {
+    let text = String(value ?? '').normalize('NFKC').replace(/台/g, '臺').replace(/\s+/g, '');
+    text = text.replace(/^([^市縣]{2,3}[市縣][^區鄉鎮市]{1,4}[區鄉鎮市])([^\d號樓巷弄]{1,6}[村里])(?:\d+鄰)?(?=[^\d]+?(?:路|街|大道|段))/, '$1');
+    text = text.replace(/^([^市縣]{2,3}[市縣][^區鄉鎮市]{1,4}[區鄉鎮市])\d+鄰/, '$1');
+    text = text.replace(/(十[一二三四五六七八九]|[一二三四五六七八九十])段/g, (_, tok) => {
+      if (tok === '十') return '10段';
+      if (tok.startsWith('十') && tok.length === 2) return `${10 + (CN_SECTION_DIGITS[tok[1]] || 0)}段`;
+      return `${CN_SECTION_DIGITS[tok] || tok}段`;
+    });
+    const match = text.match(/^(.+?\d+(?:[-之]\d+)?號)/);
+    return match ? match[1].replace(/(\d+)-(\d+號)$/, '$1之$2') : text;
+  }
   function companyId(taxId) { return /^\d{8}$/.test(String(taxId)) ? `tax_${taxId}` : null; }
 
   function validateStatuses(value) {
@@ -111,7 +124,7 @@
     if (filters.capital === 'MIN_10M') {
       if (capitalTier(row[4]) === 'UNKNOWN' || Number(row[4]) < 10000000) return false;
     } else if (filters.capital !== 'ALL' && capitalTier(row[4]) !== filters.capital) return false;
-    if (filters.address && row[0] !== filters.address) return false;
+    if (filters.address && buildingBaseAddress(row[0]) !== buildingBaseAddress(filters.address) && row[0] !== filters.address) return false;
     const info = enrichment[String(row[1])] || {};
     if (!ignoreStatus && filters.status !== 'ALL') {
       if (filters.status === 'LISTED' ? !['上市', '上櫃'].includes(info.market)
@@ -130,6 +143,6 @@
   }
 
   return { STATUSES, BACKUP_KIND, MAX_BACKUP_BYTES, MAX_STATUS_RECORDS, MAX_EXPORT_ROWS, DEFAULT_CAPITAL, SOURCE_COLUMNS, CSV_HEADERS,
-    isRecord, normalizeText, companyId, validateStatuses, validateBackup, loadStoredStatuses, mergeStatuses,
+    isRecord, normalizeText, buildingBaseAddress, companyId, validateStatuses, validateBackup, loadStoredStatuses, mergeStatuses,
     csvCell, csvLine, csvDocument, safeURL, phoneURL, capitalTier, formatCapital, formatEstablished, matchesRow, exportRow };
 });

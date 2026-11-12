@@ -7,8 +7,9 @@ import unittest
 import zipfile
 from collections import Counter
 from pathlib import Path
-from build_commercial_html import (ROOT, HEADERS, COUNTIES, COLUMNS, canonical_json,
-    locate_address, normal_address, parse_source_date, prepare_data, read_tax_rows, version_content)
+from build_commercial_html import (ROOT, HEADERS, COUNTIES, COLUMNS, base_building_address, canonical_json,
+    identify_commercial_buildings, locate_address, normal_address, parse_floor_number, parse_source_date,
+    prepare_data, read_tax_rows, version_content)
 
 class OfficialDataTests(unittest.TestCase):
     @classmethod
@@ -34,9 +35,9 @@ class OfficialDataTests(unittest.TestCase):
             archive.writestr('source.csv', '\ufeff'+output.getvalue())
         return path
 
-    def build_fixture(self, directory, rows):
+    def build_fixture(self, directory, rows, office_buildings_only=False):
         archive = self.archive(directory, rows)
-        return prepare_data(archive, Path(directory)/'data', self.geo, self.manifest, {}, {'62':'電腦程式設計'}, min_records=1)
+        return prepare_data(archive, Path(directory)/'data', self.geo, self.manifest, {}, {'62':'電腦程式設計'}, min_records=1, office_buildings_only=office_buildings_only)
 
     def test_official_area_matching_does_not_truncate_zheng_or_city_names(self):
         for address, expected in [('桃園市平鎮區延平路１號','平鎮區'), ('高雄市前鎮區中山路1號','前鎮區'), ('臺南市新市區1號','新市區')]:
@@ -108,14 +109,44 @@ class OfficialDataTests(unittest.TestCase):
         self.assertEqual(catalog['coverage']['listed_matches'],len(catalog['enrichment']))
         self.assertIn('dataset_url',catalog['industry_source'])
 
+    def test_commercial_building_filter_keeps_office_towers_and_excludes_street_shops(self):
+        self.assertEqual(base_building_address('桃園市桃園區同德里中正路１０７１號１４樓之６'), '桃園市桃園區中正路1071號')
+        self.assertEqual(base_building_address('桃園市中壢區中央西路一段１號３樓'), '桃園市中壢區中央西路1段1號')
+        self.assertEqual(base_building_address('連江縣南竿鄉介壽村256號2樓'), '連江縣南竿鄉介壽村256號')
+        self.assertEqual(parse_floor_number('桃園市桃園區中正路１０７１號十四樓之２'), 14)
+        rows = []
+        tax_seq = 1
+        for county_id, name in COUNTIES.items():
+            town = self.area_index[name][0]['town_name']
+            for fl in (1, 2, 4, 6, 8, 8, 10, 12):
+                li = '中興里' if fl % 2 else ''
+                sec = '一段' if fl % 2 else '1段'
+                rows.append([f'{name}{town}{li}測試路{sec}100號{fl}樓', f'{tax_seq:08d}', '', f'商辦公司{tax_seq}', '10000000', '1151106', '股份有限公司', 'Y', '620199', '其他電腦程式設計', '', '', '', '', '', ''])
+                tax_seq += 1
+        taoyuan_town = self.area_index['桃園市'][0]['town_name']
+        rows.append([f'桃園市{taoyuan_town}測試街9號', f'{tax_seq:08d}', '', '街邊一樓店面', '100000', '1151106', '獨資', 'N', '471900', '其他零售', '', '', '', '', '', ''])
+        tax_seq += 1
+        for fl in (1, 2, 4, 6, 8, 8, 10, 12):
+            rows.append([f'桃園市{taoyuan_town}測試路10巷5弄1號{fl}樓', f'{tax_seq:08d}', '', f'巷弄住宅{tax_seq}', '1000000', '1151106', '有限公司', 'Y', '620199', '其他電腦程式設計', '', '', '', '', '', ''])
+            tax_seq += 1
+        with tempfile.TemporaryDirectory() as directory:
+            catalog = self.build_fixture(directory, rows, office_buildings_only=True)
+            self.assertEqual(catalog['total_count'], len(COUNTIES) * 8)
+            self.assertEqual(catalog['total_buildings'], len(COUNTIES))
+            self.assertEqual(catalog['coverage']['commercial_office_tenants'], len(COUNTIES) * 8)
+
     def test_entire_published_snapshot_matches_every_original_field(self):
         catalog = json.loads((ROOT/'data/catalog.json').read_text(encoding='utf-8'))
         self.assertEqual(catalog['data_mode'],'official')
-        self.assertGreater(catalog['total_count'],1000000)
+        self.assertGreater(catalog['total_count'],100000)
+        self.assertGreater(catalog['coverage']['commercial_buildings'],4000)
         self.assertEqual(len(catalog['counties']),22)
+        qualifying_buildings, _, _ = identify_commercial_buildings(ROOT/'.cache/official/BGMOPEN1.zip',self.area_index)
         source_hashes, counts = {}, Counter()
         for row in read_tax_rows(ROOT/'.cache/official/BGMOPEN1.zip'):
             if not row[1]:
+                continue
+            if parse_floor_number(row[0]) is None or base_building_address(row[0]) not in qualifying_buildings:
                 continue
             county_id, _ = locate_address(row[0],self.area_index)
             source_hashes.setdefault(county_id,hashlib.sha256()).update(canonical_json(row).encode('utf-8'))
