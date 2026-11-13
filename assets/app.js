@@ -6,9 +6,10 @@
   const DEFAULT_COUNTY_KEY = 'default_commercial_county';
   const $ = id => document.getElementById(id);
   let catalog, counties = {}, worker, currentCounty = 'taoyuan', selectedCounty = 'taoyuan', countyRegion = 'ALL';
+  let dataScope = 'office', scopeRequestId = 0;
   let filters = initialFilters(), statuses = Object.create(null), storageProblem = false, unreadableStorage = false;
   let queryId = 0, complete = false, loading = false, failed = false, loadingPage = false, exporting = false, pendingExport = false;
-  let rows = [], resultCount = 0, scanned = 0, districtCounts = {}, statusCounts = {}, addressCount = 0;
+  let rows = [], resultCount = 0, scanned = 0, scanTotal = 0, districtCounts = {}, statusCounts = {}, addressCount = 0;
   let searchTimer, composing = false, selectedId = null, directoryRequestId = 0, directoryOffset = 0, directoryTimer, directoryMode = 'names';
   let map, markersLayer, locationMarker, baseLayers = {}, baseLayerName = 'osm', autoLabels = true;
   let activeModal = null, modalTrigger = null;
@@ -16,6 +17,10 @@
 
   function initialFilters() { return { district: 'all', category: 'ALL', capital: Core.DEFAULT_CAPITAL, address: '', buildingId: '', market: 'ALL', status: 'ALL', query: '' }; }
   function selectedBuilding() { return catalog?.named_buildings?.find(building => building.id === filters.buildingId); }
+  function nameStatusLabel(building) {
+    return { address_only: '門牌已核對 · 大樓名稱待查', government_registry: '政府管理清冊名稱 · 招牌待現勘',
+      tax_registry: '官方稅籍管理組織名稱 · 招牌待現勘' }[building.name_status] || '名稱與門牌已核對';
+  }
   function element(tag, className, text) {
     const node = document.createElement(tag);
     if (className) node.className = className;
@@ -94,6 +99,7 @@
     $('btnClearSearch').style.display = filters.query ? 'block' : 'none';
     queryId++; complete = false; loading = true; failed = false; loadingPage = false;
     exporting = false; pendingExport = exportAfter; rows = []; resultCount = 0; scanned = 0;
+    scanTotal = counties[currentCounty]?.company_count || 0;
     districtCounts = {}; statusCounts = {}; addressCount = 0;
     renderFilters(); renderList(); renderMapMarkers();
     $('clientList').scrollTop = 0;
@@ -106,10 +112,12 @@
     if (message.id !== queryId) return;
     if (message.type === 'progress' || message.type === 'done') {
       rows = message.rows; resultCount = message.count; districtCounts = message.districtCounts; statusCounts = message.statusCounts;
+      scanTotal = message.total ?? scanTotal;
+      scanned = message.scanned ?? scanTotal;
       if (message.type === 'done') {
         complete = true; loading = false; addressCount = message.addressCount;
-        scanned = counties[currentCounty].company_count; renderFilters(); renderSuggestions();
-      } else scanned = message.scanned;
+        renderFilters(); renderSuggestions();
+      }
       renderList(); renderMapMarkers();
       if (complete && pendingExport) { pendingExport = false; startExport(); }
     } else if (message.type === 'page') {
@@ -122,7 +130,7 @@
       notice(`正在匯出全部篩選結果：${message.completed.toLocaleString()}／${message.total.toLocaleString()} 筆…`);
     } else if (message.type === 'export') {
       exporting = false;
-      downloadBlob(message.blob, `全台商辦樓內企業名單_${currentCounty}_${new Date().toISOString().slice(0, 10)}.csv`);
+      downloadBlob(message.blob, `${dataScope === 'registry' ? '完整營業中登記' : '商辦企業名單'}_${currentCounty}_${new Date().toISOString().slice(0, 10)}.csv`);
       notice(`已匯出全部 ${message.count.toLocaleString()} 筆篩選結果。使用 Excel 匯入時，統編欄請設定為文字。`);
     } else if (message.type === 'error') {
       if (message.operation === 'query') { complete = false; loading = false; failed = true; pendingExport = false; renderList(); }
@@ -202,7 +210,7 @@
   }
 
   function renderActiveConditions() {
-    setText('searchScope', `搜尋${counties[currentCounty].name}已收錄的商辦企業`);
+    setText('searchScope', `搜尋${counties[currentCounty].name}${dataScope === 'registry' ? '完整營業中登記' : '已收錄的商辦企業'}`);
     const list = $('activeFilters');
     list.replaceChildren();
     for (const [key, label, value] of activeConditions()) {
@@ -232,11 +240,11 @@
     (county.districts || []).forEach(d => $('districtNavBar').append(chip(`${d.name} (${d.company_count.toLocaleString()})`, d.id,
       filters.district === d.id, 'district-btn', () => switchDistrict(d.id))));
     renderIndustries();
-    $('buildingChips').replaceChildren(chip('全部商辦大樓', '', !filters.address && !filters.buildingId, 'chip', () => chooseFilter('address', '')));
+    $('buildingChips').replaceChildren(chip('不限門牌', '', !filters.address && !filters.buildingId, 'chip', () => chooseFilter('address', '')));
     if (filters.address) $('buildingChips').append(chip(filters.address, filters.address, true, 'chip', () => chooseFilter('address', '')));
     $('buildingChips').append(button('用名稱找大樓', 'chip', openAllBuildingsDirectory));
     $('buildingChips').append(button(complete ? `目前結果的 ${addressCount.toLocaleString()} 個門牌` : '搜尋完成後查看門牌', 'chip', openAddressDirectory));
-    setText('buildingCurrentLabel', selectedBuilding()?.name || filters.address || '全部商辦大樓');
+    setText('buildingCurrentLabel', selectedBuilding()?.name || filters.address || '不限門牌');
     document.querySelectorAll('#capitalChips [data-tier]').forEach(node => {
       const selected = node.dataset.tier === filters.capital;
       node.classList.toggle('active', selected); node.setAttribute('aria-pressed', String(selected));
@@ -302,7 +310,7 @@
     node.append(element('strong', '', '目前條件下沒有找到企業'),
       element('p', '', `搜尋範圍：${counties[currentCounty].name}${conditions.length ? ' · ' + conditions.map(([, label]) => label).join(' · ') : ''}`));
     if (filters.query) node.append(element('p', '', `關鍵字：「${filters.query}」`));
-    node.append(element('p', '', '僅搜尋本站已收錄的商辦企業；沒有結果不代表公司不存在。可逐一放寬條件：'));
+    node.append(element('p', '', dataScope === 'registry' ? '此範圍為本期官方營業中登記；請確認縣市並逐一放寬條件。' : '僅搜尋商辦名單；可切換完整官方登記，或逐一放寬條件。沒有結果不代表公司不存在。'));
     const actions = element('div', 'empty-actions');
     for (const [key, label, value] of conditions) actions.append(button(`取消${label}`, 'card-btn', () => {
       if (key === 'district') switchDistrict('all'); else chooseFilter(key, value);
@@ -313,7 +321,7 @@
   }
 
   function renderList() {
-    const total = counties[currentCounty]?.company_count || 0;
+    const total = scanTotal;
     setText('resultCountText', loading ? `檢索中 ${scanned.toLocaleString()}／${total.toLocaleString()} · 暫時符合 ${resultCount.toLocaleString()} 筆`
       : failed ? `搜尋未完成 · 暫時符合 ${resultCount.toLocaleString()} 筆`
         : `符合 ${resultCount.toLocaleString()} 筆 · 已顯示 ${rows.length.toLocaleString()} 筆`);
@@ -467,7 +475,7 @@
         Array.from(grid.querySelectorAll('[data-county]')).find(item => item.dataset.county === c.id)?.focus();
       });
       node.dataset.county = c.id; node.setAttribute('aria-pressed', String(selectedCounty === c.id));
-      node.append(element('span', 'county-card-name', c.name), element('span', 'county-card-badge', `${c.building_count ? `${c.building_count.toLocaleString()} 棟商辦 · ` : ''}${c.company_count.toLocaleString()} 家樓內企業`)); grid.append(node);
+      node.append(element('span', 'county-card-name', c.name), element('span', 'county-card-badge', `${dataScope === 'office' && c.building_count ? `${c.building_count.toLocaleString()} 個門牌群組 · ` : ''}${c.company_count.toLocaleString()} 筆登記`)); grid.append(node);
     });
   }
   function openCountyModal() { if (catalog) { selectedCounty = currentCounty; renderCountyGrid(); openModal('modalCountySelect'); } }
@@ -482,17 +490,18 @@
 
   function namedBuildingEntry(building) {
     const node = button('', 'building-directory-entry', () => selectNamedBuilding(building));
+    const count = building.registry_company_count ?? building.company_count;
     node.append(element('strong', '', building.name), element('span', '', building.addresses.join('、')),
-      ...(building.name_status === 'address_only' ? [element('span', '', '門牌已核對 · 大樓名稱待查')] : []),
-      element('span', '', building.company_count ? `本期收錄 ${building.company_count.toLocaleString()} 家 · 未套用企業條件` : '本期企業名單未收錄此門牌，不代表沒有企業'));
+      element('span', '', nameStatusLabel(building)),
+      element('span', '', count ? `本期完整登記 ${count.toLocaleString()} 家 · 未套用企業條件` : '本期企業名單未收錄此門牌，不代表沒有企業'));
     return node;
   }
-  function selectNamedBuilding(building) {
+  async function selectNamedBuilding(building) {
     const capital = filters.capital;
     closeModal('modalBuilding'); resetFilters(); filters.capital = capital;
     currentCounty = building.county_id; filters.buildingId = building.id;
     setText('currentCountyDisplay', counties[currentCounty].name); setText('headerCountyBadge', counties[currentCounty].name);
-    runQuery(); setMobileView('list');
+    await switchDataScope('registry'); setMobileView('list');
     if (map && counties[currentCounty].center) map.setView(counties[currentCounty].center, counties[currentCounty].zoom || 11);
     $('clientList').scrollTop = 0;
     $('searchInput').focus({ preventScroll: true });
@@ -502,7 +511,7 @@
     if (building) {
       const section = element('section', 'building-context'); section.id = 'selectedBuilding';
       section.append(element('h3', '', building.name));
-      if (building.name_status === 'address_only') section.append(element('p', '', '門牌已核對 · 大樓名稱待查'));
+      section.append(element('p', '', nameStatusLabel(building)));
       if (building.note) section.append(element('p', 'search-hint', building.note));
       for (const address of building.addresses) section.append(element('p', '', `${address} · 本期收錄 ${building.address_counts[address].toLocaleString()} 家`));
       section.append(element('p', 'search-hint', `核對日期：${building.checked_at}。名單依已核對門牌的稅籍登記彙整，並非實際進駐或既有客戶名單。`));
@@ -511,17 +520,20 @@
         const source = catalog.building_name_sources[id], url = Core.safeURL(source.url);
         if (url) sources.append(link(source.title, url, ''));
       }
-      section.append(sources, button('查看本棟全部收錄企業', 'card-btn', () => {
-        resetFilters(); filters.capital = 'ALL'; filters.buildingId = building.id; runQuery();
+      section.append(sources, button('查看本門牌全部登記（取消資本額限制）', 'card-btn', async () => {
+        resetFilters(); filters.capital = 'ALL'; filters.buildingId = building.id; await switchDataScope('registry');
       }));
       list.append(section);
     } else if (filters.query) {
       const matches = Core.findNamedBuildings(catalog.named_buildings, filters.query);
       if (!matches.length) return;
       const section = element('section', 'building-context'); section.id = 'buildingCandidates';
-      section.append(element('h3', '', '符合名稱或門牌的大樓'), element('p', 'search-hint', '選定門牌後查看企業；保留資本額，清除其他企業條件。'));
-      matches.slice(0, 3).forEach(item => section.append(namedBuildingEntry(item)));
-      if (matches.length > 3) section.append(button(`查看全部 ${matches.length} 棟`, 'text-button', () => openAllBuildingsDirectory(filters.query)));
+      const content = matches.length > 3 ? element('details') : section;
+      if (content !== section) { content.append(element('summary', '', `找到 ${matches.length} 個名稱或門牌入口，展開確認`)); section.append(content); }
+      else section.append(element('h3', '', '符合名稱或門牌的大樓'));
+      content.append(element('p', 'search-hint', '選定門牌後查看企業；保留資本額，清除其他企業條件。'));
+      matches.slice(0, 3).forEach(item => content.append(namedBuildingEntry(item)));
+      if (matches.length > 3) content.append(button(`查看全部 ${matches.length} 個入口`, 'text-button', () => openAllBuildingsDirectory(filters.query)));
       list.append(section);
     }
   }
@@ -537,7 +549,12 @@
     const buildings = (catalog.named_buildings || []).filter(item => countyId === 'ALL' || item.county_id === countyId);
     const matches = Core.findNamedBuildings(buildings, $('directorySearch').value);
     list.replaceChildren(element('p', 'search-hint', `找到 ${matches.length} 個入口 · 不套用企業篩選條件`));
-    matches.forEach(building => list.append(namedBuildingEntry(building)));
+    const appendPage = offset => {
+      list.querySelector('.list-pagination')?.remove();
+      matches.slice(offset, offset + 40).forEach(building => list.append(namedBuildingEntry(building)));
+      if (offset + 40 < matches.length) list.append(button(`載入更多（剩餘 ${matches.length - offset - 40} 個）`, 'list-pagination', () => appendPage(offset + 40)));
+    };
+    appendPage(0);
     if (!matches.length) {
       list.append(element('p', 'empty-state', buildings.length ? '這個名稱尚未收錄。可改用街道門牌查詢；零筆不代表大樓或企業不存在。' : '本縣市的大樓名稱仍待核對；已收錄的企業與門牌仍可搜尋。'));
       if (countyId !== 'ALL') list.append(button(`查詢${counties[countyId].name}企業與門牌`, 'card-btn', () => {
@@ -550,14 +567,16 @@
     directoryMode = 'names'; clearTimeout(directoryTimer);
     setText('bldModalTitle', '找大樓 · 全台縣市');
     const entries = catalog.named_buildings || [], addressOnly = entries.filter(item => item.name_status === 'address_only').length;
-    setText('bldModalSubtitle', `首批 ${entries.length - addressOnly} 棟已核對名稱${addressOnly ? `、${addressOnly} 個僅核對門牌` : ''}，更新 ${catalog.building_names_updated_at || '未提供'}。選取後切換地區、保留資本額並清除其他企業條件；僅比對列出的門牌。`);
+    const roster = entries.filter(item => ['government_registry','tax_registry'].includes(item.name_status)).length;
+    setText('bldModalSubtitle', `${entries.length - addressOnly - roster} 棟已核對名稱${roster ? `、${roster} 個管理組織來源名稱` : ''}${addressOnly ? `、${addressOnly} 個僅核對門牌` : ''}，更新 ${catalog.building_names_updated_at || '未提供'}。選取後查完整登記、保留資本額並清除其他企業條件；只比對列出門牌。`);
     const countySelect = element('select', 'industry-select'); countySelect.id = 'directoryCounty'; countySelect.setAttribute('aria-label', '選擇大樓所在縣市');
     const option = (value, text) => { const node = element('option', '', text); node.value = value; return node; };
     countySelect.append(option('ALL', '全台縣市 · 名稱與門牌'));
     for (const [id, county] of Object.entries(counties)) {
       const local = entries.filter(item => item.county_id === id), doors = local.filter(item => item.name_status === 'address_only').length;
-      const names = local.length - doors;
-      countySelect.append(option(id, `${county.name} · ${names ? `${names} 棟名稱已核對` : ''}${names && doors ? '、' : ''}${doors ? `${doors} 個門牌已核對，名稱待查` : ''}${local.length ? '' : '名稱待核對，可查企業門牌'}`));
+      const names = local.filter(item => !['address_only','government_registry','tax_registry'].includes(item.name_status)).length;
+      const organizations = local.length - names - doors;
+      countySelect.append(option(id, `${county.name} · ${[names && `${names} 棟名稱已核對`, organizations && `${organizations} 個管理組織名稱`, doors && `${doors} 個門牌已核對，名稱待查`].filter(Boolean).join('、') || '名稱待核對，可查企業門牌'}`));
     }
     countySelect.addEventListener('change', renderNamedDirectory);
     const search = element('input', 'directory-search'); search.type = 'search'; search.id = 'directorySearch';
@@ -569,12 +588,12 @@
     renderNamedDirectory(); openModal('modalBuilding'); search.focus();
   }
   function openAddressDirectory() {
-    if (!complete) { notice('請等完整搜尋完成後再開啟商辦大樓名錄。'); return; }
+    if (!complete) { notice('請等搜尋完成後再開啟門牌名錄。'); return; }
     directoryMode = 'addresses'; clearTimeout(directoryTimer);
-    setText('bldModalTitle', `${counties[currentCounty].name} · 商辦大樓名錄`);
-    setText('bldModalSubtitle', `目前條件符合 ${addressCount.toLocaleString()} 棟大樓地址；點選後查看該棟符合相同條件的登記企業。`);
+    setText('bldModalTitle', `${counties[currentCounty].name} · 目前結果門牌`);
+    setText('bldModalSubtitle', `目前條件符合 ${addressCount.toLocaleString()} 個門牌；點選後查看該門牌符合相同條件的登記企業。`);
     const list = $('bldModalList'), search = element('input', 'directory-search');
-    search.type = 'search'; search.id = 'directorySearch'; search.placeholder = '搜尋商辦大樓地址'; search.setAttribute('aria-label', '搜尋目前名錄中的商辦大樓地址');
+    search.type = 'search'; search.id = 'directorySearch'; search.placeholder = '搜尋登記門牌地址'; search.setAttribute('aria-label', '搜尋目前結果的登記門牌地址');
     search.addEventListener('input', () => { clearTimeout(directoryTimer); directoryTimer = setTimeout(() => requestDirectory(0), 150); });
     const directoryRows = element('div', 'directory-rows'); directoryRows.id = 'directoryRows';
     list.replaceChildren(directoryModes(), search, directoryRows); openModal('modalBuilding'); requestDirectory(0);
@@ -587,13 +606,13 @@
     const list = $('directoryRows'); if (!list || activeModal?.id !== 'modalBuilding' || directoryMode !== 'addresses') return;
     if (!message.offset) list.replaceChildren();
     list.querySelector('.list-pagination')?.remove();
-    if (!message.total) list.append(element('p', 'empty-state', '沒有符合的商辦大樓。'));
+    if (!message.total) list.append(element('p', 'empty-state', '沒有符合的登記門牌。'));
     message.addresses.forEach(item => {
       const node = button('', 'building-directory-entry', () => openBuildingDirectory(item.address));
-      node.append(element('strong', '', item.address || '來源未提供地址'), element('span', '', `${item.count.toLocaleString()} 家樓內企業`)); list.append(node);
+      node.append(element('strong', '', item.address || '來源未提供地址'), element('span', '', `${item.count.toLocaleString()} 筆登記`)); list.append(node);
     });
     const next = message.offset + message.addresses.length;
-    if (next < message.total) list.append(button(`載入更多商辦大樓（剩餘 ${(message.total - next).toLocaleString()} 棟）`, 'list-pagination', () => requestDirectory(next)));
+    if (next < message.total) list.append(button(`載入更多門牌（剩餘 ${(message.total - next).toLocaleString()} 個）`, 'list-pagination', () => requestDirectory(next)));
   }
   function openBuildingDirectory(address, event) {
     if (event) event.stopPropagation();
@@ -659,6 +678,7 @@
   }
 
   function wireEvents() {
+    $('dataScope').addEventListener('change', event => switchDataScope(event.target.value));
     const scheduleSearch = () => { clearTimeout(searchTimer); if (!composing) searchTimer = setTimeout(() => runQuery(), 300); };
     $('searchInput').addEventListener('compositionstart', () => { composing = true; clearTimeout(searchTimer); });
     $('searchInput').addEventListener('compositionend', () => { composing = false; scheduleSearch(); });
@@ -701,30 +721,83 @@
     ['modalBuilding', 'modalCountySelect', 'modalSources', 'modalHelp'].forEach(id => $(id)?.addEventListener('click', event => { if (event.target === $(id)) closeModal(id); }));
   }
 
-  async function boot() {
-    notice('正在載入官方資料目錄…');
-    const controller = new AbortController(), timeout = setTimeout(() => controller.abort(), 15000);
+  function renderCoverage() {
+    const node = $('coverageReport'), info = catalog.nationwide_coverage; node.replaceChildren();
+    if (!info) { node.append(element('p', '', '此資料版本未提供全台覆蓋對帳。')); return; }
+    node.append(element('p', '', `官方來源 ${info.source_rows.toLocaleString()} 筆，完整登記已發布 ${info.registry_rows.toLocaleString()} 筆；商辦名單 ${info.office_rows.toLocaleString()} 筆。完整是指本期來源所有紀錄，並非所有大樓名稱或現場租戶。`));
+    const table = element('table', 'coverage-table'), head = element('tr');
+    for (const text of ['縣市', '完整登記', '商辦名單', '名稱／門牌入口']) head.append(element('th', '', text));
+    const thead = element('thead'); thead.append(head); table.append(thead);
+    const body = element('tbody');
+    for (const county of info.counties) {
+      const row = element('tr'), count = Object.values(county.name_sources).reduce((sum, value) => sum + value, 0);
+      for (const text of [county.name, county.registry_rows.toLocaleString(), county.office_rows.toLocaleString(), count.toLocaleString()]) row.append(element('td', '', text));
+      body.append(row);
+    }
+    table.append(body); node.append(table);
+    const details = element('details', 'coverage-details'); details.append(element('summary', '', '名稱來源匯入與未配對原因'));
+    for (const [id, report] of Object.entries(catalog.building_import_report || {})) {
+      const source = catalog.building_name_sources[id], url = Core.safeURL(source.url), text = `${source.title}：讀入 ${report.input.toLocaleString()} 筆，新增 ${report.accepted.toLocaleString()} 個單一門牌；重複 ${report.duplicate_door}、地址歧義 ${report.ambiguous_address}、行政區未能唯一對應 ${report.unknown_district}、名稱不適用 ${report.unsupported_name}、缺少名稱或地址 ${report.missing_fields || 0}。來源核對 ${source.checked_at}。`;
+      const p = element('p', '', text); if (url) p.append(link('查看來源', url, '')); details.append(p);
+    }
+    for (const source of catalog.unavailable_building_sources || []) {
+      const p = element('p', '', `未完整取得：${source.title}。${source.unavailable_reason}`), url = Core.safeURL(source.url);
+      if (url) p.append(link('查看來源', url, '')); details.append(p);
+    }
+    node.append(details);
+  }
+  function renderCatalogSummary() {
+    const count = catalog.total_count || Object.values(counties).reduce((sum, county) => sum + county.company_count, 0), office = dataScope === 'office';
+    setText('bannerSummary', office ? `財政部商辦名單 · ${(catalog.total_buildings || 0).toLocaleString()} 個門牌群組 · ${count.toLocaleString()} 筆登記`
+      : `財政部完整營業中稅籍 · ${count.toLocaleString()} 筆 · 含店面與其他登記地址`);
+    setText('dataVersionText', `來源快照：${catalog.source.source_date || '以來源標示為準'} · 取得時間：${catalog.source.retrieved_at || '未提供'} · 版本 ${catalog.dataset_version.slice(0, 12)}`);
+    setText('sourceSummary', office ? `目前顯示自完整稅籍按商辦地址條件篩選的 ${count.toLocaleString()} 筆。可在資料範圍切換完整官方營業中登記。`
+      : `目前顯示完整官方營業中稅籍 ${count.toLocaleString()} 筆，原始16個欄位逐筆保留，不套用商辦門牌條件。`);
+    $('dataScope').value = dataScope; renderCoverage();
+  }
+  async function readCatalog(scope) {
+    const controller = new AbortController(), timeout = setTimeout(() => controller.abort(), 30000);
     try {
-      const response = await fetch('data/catalog.json', { signal: controller.signal, cache: 'no-cache' });
+      const response = await fetch(scope === 'registry' ? 'data/registry/catalog.json' : 'data/catalog.json', { signal: controller.signal, cache: 'no-cache' });
       if (!response.ok) throw new Error('無法讀取目錄');
       const data = await response.json();
       if (data.schema_version !== 2 || data.data_mode !== 'official' || !Core.isRecord(data.counties)
-        || JSON.stringify(data.columns) !== JSON.stringify(Core.SOURCE_COLUMNS) || !Core.isRecord(data.enrichment)) throw new Error('目錄格式不符');
+        || JSON.stringify(data.columns) !== JSON.stringify(Core.SOURCE_COLUMNS) || !Core.isRecord(data.enrichment)
+        || (data.data_scope && data.data_scope !== scope)) throw new Error('目錄格式不符');
+      return data;
+    } finally { clearTimeout(timeout); }
+  }
+  async function switchDataScope(scope) {
+    if (!['office','registry'].includes(scope) || !catalog) return;
+    if (scope === dataScope) { runQuery(); return; }
+    const requestId = ++scopeRequestId;
+    worker?.postMessage({ type:'cancel' }); queryId++; complete = false; loading = true;
+    $('dataScope').disabled = true; notice('正在載入所選資料範圍…');
+    try {
+      const data = await readCatalog(scope);
+      if (requestId !== scopeRequestId) return;
+      catalog = data; counties = data.counties; dataScope = scope;
+      if (!Object.hasOwn(counties, currentCounty)) currentCounty = 'taoyuan';
+      renderCatalogSummary(); startWorker(); runQuery();
+    } catch (_) {
+      if (requestId !== scopeRequestId) return;
+      runQuery(); notice('所選資料範圍載入失敗，仍保留原範圍；請重試。', () => switchDataScope(scope));
+      $('dataScope').value = dataScope;
+    } finally { if (requestId === scopeRequestId) $('dataScope').disabled = false; }
+  }
+  async function boot() {
+    notice('正在載入官方資料目錄…');
+    try {
+      const data = await readCatalog('office'); dataScope = 'office';
       catalog = data; counties = data.counties; notice(''); loadStatuses();
       try { const saved = localStorage.getItem(DEFAULT_COUNTY_KEY); if (saved && Object.hasOwn(counties, saved)) currentCounty = saved; }
       catch (_) { notice('瀏覽器無法讀取預設縣市，先顯示桃園市。'); }
       if (!Object.hasOwn(counties, currentCounty)) currentCounty = Object.keys(counties)[0];
-      const count = catalog.total_count || Object.values(counties).reduce((sum, county) => sum + county.company_count, 0);
-      const bldCount = catalog.total_buildings || catalog.coverage?.commercial_buildings || 0;
-      const bldPart = bldCount ? `${bldCount.toLocaleString()} 棟商辦 · ` : '';
-      setText('bannerSummary', `財政部商辦大樓稅籍 · ${bldPart}${count.toLocaleString()} 家樓內企業 · ${Object.keys(counties).length} 縣市`);
-      setText('dataVersionText', `來源快照：${catalog.source.source_date || '以來源標示為準'} · 取得時間：${catalog.source.retrieved_at || '未提供'} · 版本 ${catalog.dataset_version.slice(0, 12)}`);
-      setText('sourceSummary', `本版自財政部完整稅籍資料嚴格篩選 ${bldPart}${count.toLocaleString()} 筆商業辦公大樓內登記企業。包含企業名稱、統編、樓層地址、資本額及行業等原始欄位。`);
+      renderCatalogSummary();
       const sourceURL = Core.safeURL(catalog.source.url);
       if ($('sourceDownloadLink') && sourceURL) { $('sourceDownloadLink').href = sourceURL; $('sourceDownloadLink').target = '_blank'; $('sourceDownloadLink').rel = 'noopener noreferrer'; }
       startWorker(); initMap(); switchCounty(currentCounty);
     } catch (_) { notice('無法載入正式資料目錄。請檢查網路並確認使用網站網址開啟，再重試。', boot); }
-    finally { clearTimeout(timeout); }
   }
   Object.assign(window, { switchCounty, updateCompanyStatus, openCountyModal, confirmCountySelection, openBuildingDirectory, openAllBuildingsDirectory,
     closeCountyModal: () => closeModal('modalCountySelect'), closeBuildingModal: () => closeModal('modalBuilding'),

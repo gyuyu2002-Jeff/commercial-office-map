@@ -51,7 +51,7 @@ def sha256_file(path):
     return digest.hexdigest()
 
 def normal_address(value):
-    return re.sub(r'\s+', '', unicodedata.normalize('NFKC', value).replace('台', '臺'))
+    return re.sub(r'\s+', '', unicodedata.normalize('NFKC', value).replace('台', '臺').replace('\\u3000', ''))
 
 def parse_floor_number(address):
     match = re.search(r'(\d+|[一二三四五六七八九十]+)樓', normal_address(address))
@@ -294,7 +294,7 @@ def prepare_data(archive, output, geography, manifest, enrichment, industry_sect
         if sum(district['company_count'] for district in county['districts']) != county['company_count']:
             raise ValueError('District row reconciliation failed')
     total_buildings = len(qualifying_buildings) if qualifying_buildings is not None else len(seen_building_bases)
-    catalog = {'schema_version':2,'data_mode':'official','columns':COLUMNS,'total_count':row_count,'total_buildings':total_buildings,'counties':counties,
+    catalog = {'schema_version':2,'data_mode':'official','data_scope':'office' if office_buildings_only else 'registry','columns':COLUMNS,'total_count':row_count,'total_buildings':total_buildings,'counties':counties,
         'industries':industries,'industry_sections':industry_sections.get('sections',industry_sections),'enrichment':matched_enrichment,
         'industry_source':industry_sections.get('source',{}),
         'industry_classification_version':industry_sections.get('classification_version'),
@@ -302,13 +302,95 @@ def prepare_data(archive, output, geography, manifest, enrichment, industry_sect
         'supplemental_sources':{key:manifest[key] for key in ('twse','tpex')}, 'geography_source':geography['source'],
         'building_filter':COMMERCIAL_BUILDING_RULE if office_buildings_only else None,
         'coverage':{'active_tax_registrations':source_total_rows if source_total_rows is not None else row_count,
-            'commercial_office_tenants':row_count,'commercial_buildings':total_buildings,
+            'commercial_office_tenants':row_count if office_buildings_only else None,'commercial_buildings':total_buildings if office_buildings_only else None,
+            'published_registrations':row_count,
             'unique_tax_ids':len(seen_ids),'source_fields_preserved':len(HEADERS),
             'listed_matches':len(matched_enrichment),'unclassified_count':sum(count for (_,district),count in district_counts.items() if district.endswith('unknown'))}}
     catalog['dataset_version'] = hashlib.sha256(canonical_json(version_content(catalog)).encode('utf-8')).hexdigest()
     catalog['generated_at'] = datetime.now(timezone.utc).isoformat(timespec='seconds')
     (output / 'catalog.json').write_text(canonical_json(catalog) + '\n', encoding='utf-8')
     return catalog
+
+def single_roster_door(address):
+    text = normal_address(address)
+    if text.count('號') != 1 or any(token in text for token in ('至', '~', '～', '、', '及', '等', '(', ')', '；', ';', ',')):
+        return None
+    if '-' in text.split('號')[0] or not re.search(r'\d+(?:之\d+)?號', text):
+        return None  # Hyphens can mean either a range or a sub-number; never guess.
+    return base_building_address(text)
+
+
+def build_named_config(archive, manual, imported, geography, manifest):
+    config = json.loads(json.dumps(manual))
+    config['sources'].update(imported['sources'])
+    tax_source = dict(manifest['tax'], title='財政部全國稅籍：大樓管理組織登記名稱',
+        checked_at=parse_source_date(next(read_tax_rows(archive))[0]))
+    config['sources']['tax_management'] = tax_source
+    area_index = {}
+    for area in geography['areas']:
+        area_index.setdefault(normal_address(area['county_name']), []).append(area)
+    for areas in area_index.values(): areas.sort(key=lambda a: len(a['town_name']), reverse=True)
+    candidates = [dict(row, name_status='government_registry') for row in imported['records']]
+    missing_districts = set()
+    for row in candidates:
+        row['name'] = row['name'] if isinstance(row['name'], str) else ''
+        row['address'] = row['address'] if isinstance(row['address'], str) else ''
+        if row['address'] and not normal_address(row['address']).startswith(COUNTIES[row['county_id']]):
+            row['address'] = COUNTIES[row['county_id']] + row['address']
+        base = single_roster_door(row['address'])
+        county_id, district_id = locate_address(row['address'], area_index)
+        if base and county_id == row['county_id'] and district_id.endswith('_unknown'): missing_districts.add(base)
+    observed = {key: set() for key in missing_districts}
+    missing_counties = {key for key,name in COUNTIES.items() if any(address.startswith(name) for address in observed)}
+    missing_prefixes = tuple(COUNTIES[key] for key in missing_counties)
+    for row in read_tax_rows(archive):
+        if not row[1]: continue
+        is_committee = row[3].endswith('管理委員會') and re.search(r'大[樓廈厦]|公寓|社區|廣場|商業|商務|經貿|金融|商辦|科技', row[3])
+        if not is_committee and not normal_address(row[0]).startswith(missing_prefixes): continue
+        county_id, district_id = locate_address(row[0], area_index)
+        if county_id not in COUNTIES or district_id.endswith('_unknown'): continue
+        if county_id in missing_counties:
+            district = next(a['town_name'] for a in area_index[COUNTIES[county_id]] if a['town_code'] == district_id)
+            base = base_building_address(row[0])
+            key = base.replace(COUNTIES[county_id] + district, COUNTIES[county_id], 1)
+            if key in observed: observed[key].add(base)
+        if is_committee:
+            candidates.append({'name':row[3], 'address':row[0], 'source_id':'tax_management', 'county_id':county_id,
+                'record':row[1], 'name_status':'tax_registry'})
+    occupied = {address for building in config['buildings'] for address in building['addresses']}
+    report = {key: {'input':0,'accepted':0,'duplicate_door':0,'ambiguous_address':0,'unknown_district':0,'unsupported_name':0,'missing_fields':0}
+        for key in config['sources'] if key in imported['sources'] or key == 'tax_management'}
+    for row in candidates:
+        stat = report[row['source_id']]; stat['input'] += 1
+        name = str(row['name']).strip()
+        if not name or not row['address']:
+            stat['missing_fields'] += 1; continue
+        if not name or '管理負責人' in name or re.fullmatch(r'(?:公寓|大樓|大廈|大厦|社區|管理委員會)+', name):
+            stat['unsupported_name'] += 1; continue
+        base = single_roster_door(row['address'])
+        if not base: stat['ambiguous_address'] += 1; continue
+        if base in observed and len(observed[base]) == 1: base = next(iter(observed[base]))
+        county_id, district_id = locate_address(base, area_index)
+        if county_id != row['county_id'] or district_id.endswith('_unknown'):
+            stat['unknown_district'] += 1; continue
+        if base in occupied: stat['duplicate_door'] += 1; continue
+        district = next(a['town_name'] for a in area_index[COUNTIES[county_id]] if a['town_code'] == district_id)
+        key = 'building_' + hashlib.sha256((name+'|'+base).encode()).hexdigest()[:12]
+        config['buildings'].append({'id':key,'name':name,'aliases':[],'name_status':row['name_status'],
+            'county_id':county_id,'district':district,'addresses':[base],
+            'checked_at':config['sources'][row['source_id']]['checked_at'],
+            'references':[{'source_id':row['source_id'],'record':row['record'],'name':name,'address':row['address']}],
+            'note':'此為政府名冊或稅籍登記的管理組織名稱與單一門牌，不代表已實地核對招牌、建築用途或所有門牌。'})
+        occupied.add(base); stat['accepted'] += 1
+    for stat in report.values():
+        if stat['input'] != sum(value for key,value in stat.items() if key != 'input'):
+            raise ValueError('Building-name import reconciliation failed')
+    config['import_report'] = report
+    config['updated_at'] = max(source['checked_at'] for source in config['sources'].values())
+    config['unavailable_sources'] = imported.get('unavailable_sources', [])
+    config['coverage_note'] = '完整保留本期全國營業中稅籍；大樓名稱僅包含有來源的管理清冊、登記管理組織與人工核對資料。管理組織名稱不等於現場招牌；地址範圍或無法唯一對應者未自動配對。名稱與實際租戶不保證全台完整。'
+    return config
+
 
 def attach_named_buildings(catalog, config, data_dir):
     if config.get('schema_version') != 1 or not config.get('buildings'):
@@ -317,13 +399,13 @@ def attach_named_buildings(catalog, config, data_dir):
     for source in sources.values():
         if urlsplit(source['url']).scheme != 'https' or not source.get('checked_at'):
             raise ValueError('Named-building sources require an HTTPS URL and verification date')
-    seen_ids, seen_addresses, counts = set(), set(), {}
+    seen_ids, seen_addresses, counts, door_shards = set(), set(), {}, {}
     buildings = []
     for building in config['buildings']:
         county = catalog['counties'].get(building['county_id'])
         addresses = building['addresses']
         name_status = building.get('name_status', 'verified')
-        if name_status not in ('verified', 'address_only'):
+        if name_status not in ('verified', 'address_only', 'government_registry', 'tax_registry'):
             raise ValueError('Unknown building-name verification status')
         if name_status == 'address_only' and (building['aliases'] or len(addresses) != 1
                 or building['name'] != addresses[0].removeprefix(COUNTIES[building['county_id']] + building['district'])):
@@ -342,13 +424,20 @@ def attach_named_buildings(catalog, config, data_dir):
             seen_addresses.add(address)
         seen_ids.add(building['id'])
         if building['county_id'] not in counts:
-            counts[building['county_id']] = Counter(
-                base_building_address(row[0]) for shard in county['shards']
-                for row in json.loads((data_dir / shard['path']).read_text(encoding='utf-8'))['rows'])
+            counts[building['county_id']] = Counter()
+            door_shards[building['county_id']] = {}
+            for shard in county['shards']:
+                for row in json.loads((data_dir / shard['path']).read_text(encoding='utf-8'))['rows']:
+                    door = base_building_address(row[0])
+                    counts[building['county_id']][door] += 1
+                    door_shards[building['county_id']].setdefault(door, set()).add(shard['path'])
         address_counts = {address: counts[building['county_id']][address] for address in addresses}
-        buildings.append(dict(building, address_counts=address_counts, company_count=sum(address_counts.values())))
+        paths = set().union(*(door_shards[building['county_id']].get(address, set()) for address in addresses))
+        buildings.append(dict(building, address_counts=address_counts, company_count=sum(address_counts.values()),
+            shard_paths=[shard['path'] for shard in county['shards'] if shard['path'] in paths]))
     catalog.update(named_buildings=buildings, building_name_sources=sources,
-        building_names_updated_at=config['updated_at'], building_names_coverage=config['coverage_note'])
+        building_names_updated_at=config['updated_at'], building_names_coverage=config['coverage_note'],
+        building_import_report=config.get('import_report', {}), unavailable_building_sources=config.get('unavailable_sources', []))
     # Names, aliases and door associations are part of the published data version.
     content = {key: value for key, value in catalog.items() if key not in ('dataset_version', 'app_version')}
     catalog['dataset_version'] = hashlib.sha256(canonical_json(version_content(content)).encode('utf-8')).hexdigest()
@@ -374,11 +463,45 @@ def build_site(root=ROOT, output=None, source_dir=None, download=False):
             if target.resolve().parent not in (root, output):
                 raise ValueError('Unexpected generated-data directory')
             shutil.rmtree(target)
-    catalog = prepare_data(source_dir / 'BGMOPEN1.zip', output / 'data', geography, manifest, stock_enrichment(source_dir), sections)
-    attach_named_buildings(catalog, json.loads((root / 'config/named_buildings.json').read_text(encoding='utf-8')), output / 'data')
-    catalog['app_version'] = hashlib.sha256(b''.join((root / asset).read_bytes() for asset in
+    from import_building_sources import import_sources
+    roster_path = root / '.cache/buildings/inputs.json'
+    if download or not roster_path.exists():
+        import_sources(root / 'config/building_import_sources.json', roster_path)
+    imported = json.loads(roster_path.read_text(encoding='utf-8'))
+    named_config = build_named_config(source_dir / 'BGMOPEN1.zip',
+        json.loads((root / 'config/named_buildings.json').read_text(encoding='utf-8')), imported, geography, manifest)
+    print(f"Prepared {len(named_config['buildings']):,} sourced name/door entries", flush=True)
+    enrichment = stock_enrichment(source_dir)
+    catalog = prepare_data(source_dir / 'BGMOPEN1.zip', output / 'data', geography, manifest, enrichment, sections)
+    print(f"Prepared {catalog['total_count']:,} office-filtered records", flush=True)
+    registry = prepare_data(source_dir / 'BGMOPEN1.zip', output / 'data/registry', geography, manifest, enrichment, sections, office_buildings_only=False)
+    print(f"Prepared {registry['total_count']:,} full nationwide registrations", flush=True)
+    attach_named_buildings(registry, named_config, output / 'data/registry')
+    attach_named_buildings(catalog, named_config, output / 'data')
+    full_names = {entry['id']:entry for entry in registry['named_buildings']}
+    for entry in catalog['named_buildings']:
+        entry['registry_company_count'] = full_names[entry['id']]['company_count']
+    for county in registry['counties'].values():
+        for shard in county['shards']: shard['path'] = 'registry/' + shard['path']
+    for entry in registry['named_buildings']:
+        entry['shard_paths'] = ['registry/' + path for path in entry['shard_paths']]
+    coverage = {'source_rows':catalog['coverage']['active_tax_registrations'], 'registry_rows':registry['total_count'],
+        'office_rows':catalog['total_count'], 'counties':[]}
+    for county_id, county in registry['counties'].items():
+        names = [entry for entry in registry['named_buildings'] if entry['county_id'] == county_id]
+        statuses = Counter(entry.get('name_status','verified') for entry in names)
+        coverage['counties'].append({'id':county_id,'name':county['name'],'registry_rows':county['company_count'],
+            'office_rows':catalog['counties'].get(county_id,{}).get('company_count',0), 'name_sources':dict(statuses)})
+    if coverage['source_rows'] != coverage['registry_rows']:
+        raise ValueError('Full nationwide registration count does not match the source')
+    catalog['nationwide_coverage'] = registry['nationwide_coverage'] = coverage
+    app_version = hashlib.sha256(b''.join((root / asset).read_bytes() for asset in
         ('assets/app.js', 'assets/core.js', 'assets/search-worker.js'))).hexdigest()[:16]
-    (output / 'data' / 'catalog.json').write_text(canonical_json(catalog) + '\n', encoding='utf-8')
+    for item, filename in ((catalog, 'catalog.json'), (registry, 'registry/catalog.json')):
+        item['app_version'] = app_version
+        content = {key:value for key,value in item.items() if key not in ('dataset_version','app_version')}
+        item['dataset_version'] = hashlib.sha256(canonical_json(version_content(content)).encode('utf-8')).hexdigest()
+        (output / 'data' / filename).write_text(canonical_json(item) + '\n', encoding='utf-8')
     html = (root / 'src' / 'index.html').read_text(encoding='utf-8')
     for asset in ('assets/styles.css','assets/core.js','assets/app.js'):
         html = html.replace('"' + asset + '"', '"' + asset + '?v=' + sha256_file(root / asset)[:12] + '"')

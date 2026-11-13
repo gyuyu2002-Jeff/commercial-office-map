@@ -30,6 +30,12 @@ jobs:
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: '22'
+      - name: Retain last complete public building rosters
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: .cache/buildings/inputs.json
+          key: building-rosters-v1-${{ github.run_id }}
+          restore-keys: building-rosters-v1-
       - name: Build static site
         run: python build_commercial_html.py --download
       - name: Test data build and browser logic

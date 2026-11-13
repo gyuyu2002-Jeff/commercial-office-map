@@ -9,7 +9,7 @@ from collections import Counter
 from pathlib import Path
 from build_commercial_html import (ROOT, HEADERS, COUNTIES, COLUMNS, base_building_address, canonical_json,
     identify_commercial_buildings, locate_address, normal_address, parse_floor_number, parse_source_date,
-    prepare_data, read_tax_rows, version_content, attach_named_buildings)
+    prepare_data, read_tax_rows, version_content, attach_named_buildings, single_roster_door, build_named_config)
 
 class OfficialDataTests(unittest.TestCase):
     @classmethod
@@ -112,8 +112,8 @@ class OfficialDataTests(unittest.TestCase):
     def test_named_building_provenance_exact_doors_and_counts(self):
         catalog = json.loads((ROOT/'data/catalog.json').read_text(encoding='utf-8'))
         config = json.loads((ROOT/'config/named_buildings.json').read_text(encoding='utf-8'))
-        self.assertEqual(len(catalog['named_buildings']), len(config['buildings']))
-        self.assertEqual(catalog['building_name_sources'], config['sources'])
+        self.assertGreater(len(catalog['named_buildings']), 5000)
+        self.assertEqual({key:catalog['building_name_sources'][key] for key in config['sources']}, config['sources'])
         self.assertEqual({b['county_id'] for b in catalog['named_buildings']}, set(catalog['counties']), 'every county has a first verified door entry')
         door_only = [b for b in catalog['named_buildings'] if b.get('name_status') == 'address_only']
         self.assertEqual([b['county_id'] for b in door_only], ['lienchiang'])
@@ -128,12 +128,27 @@ class OfficialDataTests(unittest.TestCase):
         motian = next(b for b in catalog['named_buildings'] if b['name'] == '摩天金融大樓')
         self.assertEqual(motian['addresses'], ['桃園市桃園區中正路1247號', '桃園市桃園區中正路1249號'])
         self.assertNotIn('桃園市桃園區中正路1248號', motian['addresses'])
+        generated = dict(buildings=catalog['named_buildings'], sources=catalog['building_name_sources'], schema_version=1,
+            updated_at=catalog['building_names_updated_at'],coverage_note=catalog['building_names_coverage'],
+            import_report=catalog['building_import_report'],unavailable_sources=catalog['unavailable_building_sources'])
+        for report in generated['import_report'].values():
+            self.assertEqual(report['input'],sum(value for key,value in report.items() if key != 'input'))
         old_version = catalog['dataset_version']
-        attach_named_buildings(catalog, config, ROOT/'data')
+        attach_named_buildings(catalog, generated, ROOT/'data')
         self.assertEqual(catalog['dataset_version'], old_version, 'unchanged names and data give a stable version')
-        config['buildings'][0]['aliases'].append('測試別名')
-        attach_named_buildings(catalog, config, ROOT/'data')
+        generated['buildings'][0]['aliases'].append('測試別名')
+        attach_named_buildings(catalog, generated, ROOT/'data')
         self.assertNotEqual(catalog['dataset_version'], old_version)
+
+    def test_roster_null_fields_are_reported_without_inventing_a_name_or_address(self):
+        imported = {'sources':{'test':{'url':'https://example.invalid','checked_at':'2026-11-06'}},
+            'records':[{'name':None,'address':None,'source_id':'test','county_id':'taoyuan','record':'row 1'}]}
+        with tempfile.TemporaryDirectory() as directory:
+            generated = build_named_config(self.archive(directory,self.rows),
+                {'schema_version':1,'sources':{},'buildings':[]}, imported, self.geo, self.manifest)
+        self.assertEqual(generated['buildings'],[])
+        self.assertEqual(generated['import_report']['test']['missing_fields'],1)
+        self.assertEqual(generated['import_report']['test']['input'],1)
 
     def test_invalid_named_building_associations_stop_publication(self):
         catalog = json.loads((ROOT/'data/catalog.json').read_text(encoding='utf-8'))
@@ -154,6 +169,10 @@ class OfficialDataTests(unittest.TestCase):
                 attach_named_buildings(catalog, config, ROOT/'data')
 
     def test_commercial_building_filter_keeps_office_towers_and_excludes_street_shops(self):
+        self.assertEqual(base_building_address('嘉義市東\\u3000區中正路412號9樓'), '嘉義市東區中正路412號')
+        for address in ['桃園市桃園區中正路1247-1249號', '桃園市桃園區中正路1號至3號', '桃園市桃園區中正路1號等']:
+            self.assertIsNone(single_roster_door(address))
+        self.assertEqual(single_roster_door('桃園市桃園區中正路12之3號9樓'), '桃園市桃園區中正路12之3號')
         self.assertEqual(base_building_address('桃園市桃園區同德里中正路１０７１號１４樓之６'), '桃園市桃園區中正路1071號')
         self.assertEqual(base_building_address('桃園市中壢區中央西路一段１號３樓'), '桃園市中壢區中央西路1段1號')
         self.assertEqual(base_building_address('連江縣南竿鄉介壽村256號2樓'), '連江縣南竿鄉介壽村256號')
@@ -186,30 +205,49 @@ class OfficialDataTests(unittest.TestCase):
         self.assertGreater(catalog['coverage']['commercial_buildings'],4000)
         self.assertEqual(len(catalog['counties']),22)
         qualifying_buildings, _, _ = identify_commercial_buildings(ROOT/'.cache/official/BGMOPEN1.zip',self.area_index)
-        source_hashes, counts = {}, Counter()
+        registry = json.loads((ROOT/'data/registry/catalog.json').read_text(encoding='utf-8'))
+        self.assertEqual(registry['data_scope'], 'registry')
+        self.assertIsNone(registry['building_filter'])
+        self.assertEqual(registry['total_count'],catalog['coverage']['active_tax_registrations'])
+        self.assertGreater(registry['total_count'],1500000)
+        source_hashes, counts, full_hashes, full_counts = {}, Counter(), {}, Counter()
         for row in read_tax_rows(ROOT/'.cache/official/BGMOPEN1.zip'):
             if not row[1]:
                 continue
+            county_id, _ = locate_address(row[0],self.area_index)
+            full_hashes.setdefault(county_id,hashlib.sha256()).update(canonical_json(row).encode('utf-8'))
+            full_counts[county_id] += 1
             if parse_floor_number(row[0]) is None or base_building_address(row[0]) not in qualifying_buildings:
                 continue
-            county_id, _ = locate_address(row[0],self.area_index)
             source_hashes.setdefault(county_id,hashlib.sha256()).update(canonical_json(row).encode('utf-8'))
             counts[county_id] += 1
         self.assertEqual(sum(counts.values()),catalog['total_count'])
-        for county_id, county in catalog['counties'].items():
-            digest, count = hashlib.sha256(), 0
-            self.assertEqual(county['company_count'],counts[county_id])
-            for shard in county['shards']:
-                raw = (ROOT/'data'/shard['path']).read_bytes()
-                self.assertEqual(hashlib.sha256(raw).hexdigest(),shard['sha256'])
-                rows = json.loads(raw)['rows']
-                self.assertEqual(len(rows),shard['count'])
-                for row in rows:
-                    self.assertEqual(len(row),17)
-                    digest.update(canonical_json(row[:16]).encode('utf-8'))
-                    count += 1
-            self.assertEqual(count,counts[county_id])
-            self.assertEqual(digest.hexdigest(),source_hashes[county_id].hexdigest())
+        self.assertEqual(sum(full_counts.values()),registry['total_count'])
+        for scope, expected_hashes, expected_counts in [(catalog,source_hashes,counts),(registry,full_hashes,full_counts)]:
+            named_doors = {address for entry in scope['named_buildings'] for address in entry['addresses']}
+            door_paths, door_counts = {}, Counter()
+            for county_id, county in scope['counties'].items():
+                digest, count = hashlib.sha256(), 0
+                self.assertEqual(county['company_count'],expected_counts[county_id])
+                for shard in county['shards']:
+                    raw = (ROOT/'data'/shard['path']).read_bytes()
+                    self.assertEqual(hashlib.sha256(raw).hexdigest(),shard['sha256'])
+                    rows = json.loads(raw)['rows']
+                    self.assertEqual(len(rows),shard['count'])
+                    for row in rows:
+                        self.assertEqual(len(row),17)
+                        digest.update(canonical_json(row[:16]).encode('utf-8'))
+                        door = base_building_address(row[0])
+                        if door in named_doors:
+                            door_paths.setdefault(door,set()).add(shard['path'])
+                            door_counts[door] += 1
+                        count += 1
+                self.assertEqual(count,expected_counts[county_id])
+                self.assertEqual(digest.hexdigest(),expected_hashes[county_id].hexdigest())
+            for entry in scope['named_buildings']:
+                expected_paths = set().union(*(door_paths.get(address,set()) for address in entry['addresses']))
+                self.assertEqual(set(entry['shard_paths']),expected_paths,entry['name'])
+                self.assertEqual(entry['company_count'],sum(door_counts[address] for address in entry['addresses']))
         self.assertFalse((ROOT/'dist/data/counties').exists())
         self.assertFalse((ROOT/'dist/commercial_database_taiwan.json').exists())
 

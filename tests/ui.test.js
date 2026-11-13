@@ -13,7 +13,7 @@ async function app(t, addressOnly = false) {
     url: 'https://example.invalid/', runScripts: 'dangerously', pretendToBeVisual: true
   });
   t.after(() => dom.window.close());
-  const { window } = dom, queries = [];
+  const { window } = dom, queries = [], fetched = [];
   const county = name => ({ name, company_count: 2, center: [25, 121], districts: [{ id: 'D1', name: '中壢區', company_count: 2 }], shards: [] });
   const catalog = { schema_version: 2, data_mode: 'official', dataset_version: 'a'.repeat(64), columns: Core.SOURCE_COLUMNS,
     source: {}, counties: { taoyuan: county('桃園市'), taipei: county('臺北市') },
@@ -28,7 +28,8 @@ async function app(t, addressOnly = false) {
   let onMessage;
   if (addressOnly) catalog.named_buildings.push({ ...catalog.named_buildings[0], id: 'door_only', name: '測試路1號', aliases: [],
     name_status: 'address_only', note: '僅核對公開登記地址，名稱待查。' });
-  window.fetch = async () => ({ ok: true, json: async () => window.JSON.parse(JSON.stringify(catalog)) });
+  window.fetch = async url => { fetched.push(url); return { ok: true, json: async () => window.JSON.parse(JSON.stringify({ ...catalog,
+    data_scope: url.includes('/registry/') ? 'registry' : 'office' })) }; };
   window.Worker = class {
     addEventListener(type, fn) { if (type === 'message') onMessage = fn; }
     postMessage(message) { if (message.type === 'query') queries.push(message); }
@@ -41,7 +42,7 @@ async function app(t, addressOnly = false) {
   const document = window.document, get = id => document.getElementById(id), last = () => queries.at(-1);
   const reply = (rows, id = last().id) => onMessage({ data: { type: 'done', id, rows, count: rows.length,
     districtCounts: { D1: rows.length }, statusCounts: { ALL: rows.length, 尚未拜訪: rows.length }, addressCount: rows.length } });
-  return { window, document, get, queries, last, reply };
+  return { window, document, get, queries, last, reply, fetched };
 }
 
 const company = ['桃園市中壢區中央里中山路８８號１７樓', '23492169', '', '華懋科技股份有限公司', '463188000',
@@ -139,6 +140,7 @@ test('building directory works before company search finishes and selection pres
   ui.get('directorySearch').value = '測試商辦'; ui.get('directorySearch').dispatchEvent(new ui.window.Event('input'));
   assert.equal(ui.document.querySelectorAll('#directoryRows .building-directory-entry').length, 1);
   ui.document.querySelector('#directoryRows .building-directory-entry').click();
+  await pause(20);
   assert.equal(ui.last().countyId, 'taoyuan'); assert.equal(ui.last().filters.buildingId, 'tower');
   assert.equal(ui.last().filters.query, ''); assert.equal(ui.last().filters.capital, 'MIN_10M');
   assert.equal(ui.last().filters.market, 'ALL'); assert.equal(ui.last().filters.status, 'ALL');
@@ -155,6 +157,7 @@ test('main search offers name candidates even when company filters return nothin
   ui.get('searchInput').value = '測試商辦'; ui.get('btnDoSearch').click(); ui.reply([]);
   assert.match(ui.get('buildingCandidates').textContent, /測試商辦大樓/);
   ui.document.querySelector('#buildingCandidates .building-directory-entry').click();
+  await pause(20);
   assert.equal(ui.last().filters.buildingId, 'tower'); assert.equal(ui.last().filters.query, '');
   ui.document.querySelector('#districtNavBar [data-value="D1"]').click(); assert.equal(ui.last().filters.buildingId, '');
   ui.get('btnBuildingMode').click(); ui.get('directorySearch').value = '尚未查證名稱';
@@ -187,7 +190,22 @@ test('address-only entries are never presented as verified building names', asyn
   const option = [...ui.get('directoryCounty').options].find(item => item.value === 'taoyuan');
   assert.match(option.textContent, /2 棟名稱已核對、1 個門牌已核對，名稱待查/);
   const entry = [...ui.document.querySelectorAll('#directoryRows .building-directory-entry')].find(node => node.textContent.includes('名稱待查'));
-  entry.click(); assert.equal(ui.last().filters.buildingId, 'door_only');
+  entry.click(); await pause(20); assert.equal(ui.last().filters.buildingId, 'door_only');
   assert.match(ui.get('selectedBuilding').textContent, /僅核對公開登記地址/);
   assert.equal(ui.document.querySelector('#selectedBuilding summary').textContent, '門牌登記來源');
+});
+
+test('full registration scope retains search and capital; failures preserve the previous scope', async t => {
+  const ui = await app(t);
+  ui.get('searchInput').value = '街道關鍵字'; ui.get('btnDoSearch').click();
+  ui.get('dataScope').value = 'registry'; ui.get('dataScope').dispatchEvent(new ui.window.Event('change'));
+  await pause(20);
+  assert.ok(ui.fetched.includes('data/registry/catalog.json'));
+  assert.equal(ui.get('dataScope').value, 'registry');
+  assert.equal(ui.last().filters.query, '街道關鍵字'); assert.equal(ui.last().filters.capital, 'MIN_10M');
+  assert.match(ui.get('searchScope').textContent, /完整營業中登記/);
+  ui.window.fetch = async () => { throw new Error('offline'); };
+  ui.get('dataScope').value = 'office'; ui.get('dataScope').dispatchEvent(new ui.window.Event('change')); await pause(20);
+  assert.equal(ui.get('dataScope').value, 'registry');
+  assert.match(ui.get('appNotice').textContent, /載入失敗.*保留原範圍/);
 });

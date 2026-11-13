@@ -56,13 +56,16 @@ async function query(message) {
   if (!county) throw new Error('找不到此縣市資料。');
   const building = (catalog.named_buildings || []).find(item => item.id === message.filters.buildingId && item.county_id === message.countyId);
   if (message.filters.buildingId && !building) throw new Error('找不到此大樓的核對門牌，請重新選擇大樓。');
+  const paths = building?.shard_paths;
+  const shards = paths ? county.shards.filter(shard => paths.includes(shard.path)) : county.shards;
+  if (paths && shards.length !== new Set(paths).size) throw new Error('大樓資料索引不一致，請重新整理後再試。');
   const job = { id: message.id, countyId: message.countyId, controller: new AbortController(),
     filters: { ...message.filters, buildingAddresses: building?.addresses, queryTerms: Core.searchTerms(message.filters.query) }, statuses: Core.validateStatuses(message.statuses),
-    matches: [], otherMatches: [], count: 0, scanned: 0, total: county.company_count, preview: [[], []], districtCounts: Object.create(null),
+    matches: [], otherMatches: [], count: 0, scanned: 0, total: paths ? shards.reduce((sum, shard) => sum + shard.count, 0) : county.company_count, preview: [[], []], districtCounts: Object.create(null),
     statusCounts: { ALL: 0, LISTED: 0, 尚未拜訪: 0, 洽談中: 0, 已拜訪: 0 },
     addresses: new Map(), complete: false };
   current = job;
-  for (const shard of county.shards) {
+  for (const shard of shards) {
     const rows = await readRows(shard, job), hits = [[], []];
     for (let index = 0; index < rows.length; index++) {
       const row = rows[index];
@@ -93,7 +96,7 @@ async function query(message) {
   job.matches.push(...job.otherMatches);
   job.otherMatches = [];
   job.complete = true;
-  send('done', { id: job.id, count: job.count, rows: job.preview.flat().slice(0, 40), statusCounts: job.statusCounts,
+  send('done', { id: job.id, scanned: job.scanned, total: job.total, count: job.count, rows: job.preview.flat().slice(0, 40), statusCounts: job.statusCounts,
     districtCounts: job.districtCounts, addressCount: job.addresses.size });
 }
 

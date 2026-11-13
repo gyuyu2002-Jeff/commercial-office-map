@@ -22,11 +22,11 @@
       && (Object.getPrototypeOf(value) === Object.prototype || Object.getPrototypeOf(value) === null);
   }
 
-  function normalizeText(value) { return String(value ?? '').normalize('NFKC').toLocaleLowerCase().replace(/臺/g, '台').replace(/\s+/g, ''); }
+  function normalizeText(value) { return String(value ?? '').normalize('NFKC').toLocaleLowerCase().replace(/臺/g, '台').replace(/\\u3000/g, '').replace(/\s+/g, ''); }
   function searchTerms(value) { return String(value ?? '').normalize('NFKC').trim().split(/\s+/).map(normalizeText).filter(Boolean); }
   const CN_SECTION_DIGITS = { 一: 1, 二: 2, 三: 3, 四: 4, 五: 5, 六: 6, 七: 7, 八: 8, 九: 9 };
   function buildingBaseAddress(value) {
-    let text = String(value ?? '').normalize('NFKC').replace(/台/g, '臺').replace(/\s+/g, '');
+    let text = String(value ?? '').normalize('NFKC').replace(/台/g, '臺').replace(/\\u3000/g, '').replace(/\s+/g, '');
     text = text.replace(/^([^市縣]{2,3}[市縣][^區鄉鎮市]{1,4}[區鄉鎮市])([^\d號樓巷弄]{1,6}[村里])(?:\d+鄰)?(?=[^\d]+?(?:路|街|大道|段))/, '$1');
     text = text.replace(/^([^市縣]{2,3}[市縣][^區鄉鎮市]{1,4}[區鄉鎮市])\d+鄰/, '$1');
     text = text.replace(/(十[一二三四五六七八九]|[一二三四五六七八九十])段/g, (_, tok) => {

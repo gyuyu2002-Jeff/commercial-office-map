@@ -275,6 +275,33 @@ test('verified building aliases match exact doors; multi-door selection excludes
   assert.equal(Core.findNamedBuildings([{ ...building, addresses: ['桃園市桃園區大興西路2段6號'] }], '大興西路二段6號').length, 1);
 });
 
+test('building shard index fetches only relevant files, preserves results and rejects invalid paths', async () => {
+  const requested = [];
+  const h = workerHarness(async (filename, options, files) => {
+    requested.push(filename);
+    return new Response(files.get(filename));
+  });
+  const records = [row(0), row(1), row(2)];
+  records[2][0] = '臺北市中正區忠孝路2號';
+  h.addCounty('taipei', [[records[0]], [records[1]], [records[2]]]);
+  const paths = h.catalog.counties.taipei.shards.slice(0, 2).map(shard => shard.path);
+  const building = { id: 'indexed', county_id: 'taipei', name: '索引大樓', aliases: [], addresses: ['臺北市中正區忠孝路1號'], shard_paths: paths };
+  h.catalog.named_buildings = [building]; await h.initialize();
+  await h.send({ type: 'query', id: 51, countyId: 'taipei', filters: { ...filters(), buildingId: 'indexed' }, statuses: {} });
+  const done = h.messages.find(message => message.type === 'done' && message.id === 51);
+  assert.equal(done?.count, 2); assert.equal(done.total, 2); assert.equal(done.scanned, 2);
+  assert.deepEqual(requested, paths);
+  await h.send({ type: 'export', id: 51 });
+  assert.equal(h.messages.find(message => message.type === 'export').count, 2);
+  building.shard_paths = []; await h.initialize();
+  await h.send({ type: 'query', id: 52, countyId: 'taipei', filters: { ...filters(), buildingId: 'indexed' }, statuses: {} });
+  assert.equal(h.messages.find(message => message.type === 'done' && message.id === 52).count, 0);
+  building.shard_paths = ['missing']; await h.initialize();
+  await h.send({ type: 'query', id: 53, countyId: 'taipei', filters: { ...filters(), buildingId: 'indexed' }, statuses: {} });
+  assert.ok(h.messages.some(message => message.type === 'error' && message.id === 53));
+  assert.ok(!h.messages.some(message => message.type === 'done' && message.id === 53));
+});
+
 test('worker applies visit status, normalized search, and real address grouping consistently', async () => {
   const h = workerHarness(); h.addCounty('taipei', [[row(0), row(1), row(2)]]); await h.initialize();
   await h.send({ type: 'query', id: 2, countyId: 'taipei', filters: { ...filters(), status: '尚未拜訪', query: '台北' }, statuses: { tax_00000001: '已拜訪' } });

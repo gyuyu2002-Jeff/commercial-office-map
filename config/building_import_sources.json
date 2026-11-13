@@ -1,0 +1,89 @@
+{
+  "schema_version": 1,
+  "sources": [
+    {
+      "id": "tycg_roster",
+      "title": "桃園市建管處管理組織完整清冊",
+      "url": "https://oba.tycg.gov.tw/News_Content.aspx?n=8696&s=1620845",
+      "download_url": "https://ws.tycg.gov.tw/Download.ashx?n=5qGD5ZyS5biC5ZCE5Y2A5YWs5a%2BT5aSn5buI5oiQ56uL57WE57mU5aCx5YKZ5Lu25pW4KOe1seioiOizh%2BaWmeaIquiHszExNeW5tDEw5pyIMzHml6UpLnhsc3g%3D&u=LzAwMS9VcGxvYWQvMTA5L3JlbGZpbGUvMTI2MzgvMTYyMDg0NS84NDA2ZDZkMy0zZmViLTRlNWUtOGRkNC0wZWM4ZjdkMDYzMGEueGxzeA%3D%3D",
+      "county_id": "taoyuan",
+      "format": "xlsx",
+      "minimum_rows": 8000,
+      "required": true
+    },
+    {
+      "id": "ntpc_roster",
+      "title": "新北市工務局管理組織報備清冊",
+      "url": "https://data.ntpc.gov.tw/datasets/EB446C92-12E8-41B0-96DA-FEB6EA569E11",
+      "download_url": "https://data.ntpc.gov.tw/api/datasets/eb446c92-12e8-41b0-96da-feb6ea569e11/json?page={page}&size=1000",
+      "county_id": "new_taipei",
+      "format": "json",
+      "name_field": "organization",
+      "address_field": "address",
+      "page_size": 1000,
+      "minimum_rows": 7000,
+      "required": true
+    },
+    {
+      "id": "chcg_roster",
+      "title": "彰化縣全國建管系統公寓大廈報備資料",
+      "url": "https://cpami.chcg.gov.tw/opendata/docs/a6.html",
+      "download_url": "https://cpami.chcg.gov.tw/opendata/OpenDataSearchUrl.do?d=OPENDATA&c=APM&Start={start}",
+      "county_id": "changhua",
+      "format": "apm",
+      "name_field": "管理委員會名稱",
+      "address_field": "地址",
+      "page_size": 100,
+      "minimum_rows": 700,
+      "required": true
+    },
+    {
+      "id": "chiayi_roster",
+      "title": "嘉義市公寓大廈管理委員會",
+      "url": "https://data.gov.tw/dataset/52419",
+      "download_url": "https://data.chiayi.gov.tw/opendata/api/getResource?oid=9a1dee62-16c9-4657-b7b1-bb015a4fb431&rid=316e68e3-1be3-48cc-8fb1-98d226538e96",
+      "county_id": "chiayi_city",
+      "format": "csv",
+      "name_field": "名稱",
+      "address_field": "地址",
+      "minimum_rows": 100,
+      "required": true
+    },
+    {
+      "id": "hccg_0",
+      "title": "新竹市公寓大廈管理組織報備清冊 東區",
+      "url": "https://data.gov.tw/dataset/87886",
+      "download_url": "https://odws.hccg.gov.tw/001/Upload/25/opendataback/9059/304/6d7511a2-4048-498f-a206-189ec987cbec.csv",
+      "county_id": "hsinchu_city",
+      "format": "csv",
+      "name_field": "公寓大廈名稱",
+      "address_field": "建築地址",
+      "minimum_rows": 30,
+      "required": true
+    },
+    {
+      "id": "hccg_1",
+      "title": "新竹市公寓大廈管理組織報備清冊 北區",
+      "url": "https://data.gov.tw/dataset/87886",
+      "download_url": "https://odws.hccg.gov.tw/001/Upload/25/opendataback/9059/304/0cc84d90-a76b-4fae-aefa-fe1e4385d75b.csv",
+      "county_id": "hsinchu_city",
+      "format": "csv",
+      "name_field": "公寓大廈名稱",
+      "address_field": "建築地址",
+      "minimum_rows": 30,
+      "required": true
+    },
+    {
+      "id": "hccg_2",
+      "title": "新竹市公寓大廈管理組織報備清冊 香山區",
+      "url": "https://data.gov.tw/dataset/87886",
+      "download_url": "https://odws.hccg.gov.tw/001/Upload/25/opendataback/9059/304/aef9b64d-a8d2-4984-838d-eabd172813c5.csv",
+      "county_id": "hsinchu_city",
+      "format": "csv",
+      "name_field": "公寓大廈名稱",
+      "address_field": "建築地址",
+      "minimum_rows": 30,
+      "required": true
+    }
+  ]
+}
