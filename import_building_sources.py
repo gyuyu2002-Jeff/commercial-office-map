@@ -47,7 +47,8 @@ def download(url):
 
 def import_sources(config_path, output):
     output = Path(output)
-    previous = json.loads(output.read_text(encoding='utf-8')) if output.exists() else {'sources':{},'records':[]}
+    previous_path = output if output.exists() else Path(config_path).with_name('building_roster_snapshot.json')
+    previous = json.loads(previous_path.read_text(encoding='utf-8')) if previous_path.exists() else {'sources':{},'records':[]}
     specs = json.loads(Path(config_path).read_text(encoding='utf-8'))['sources']
     result = {'schema_version': 1, 'sources': {}, 'records': [], 'unavailable_sources': []}
     for spec in specs:

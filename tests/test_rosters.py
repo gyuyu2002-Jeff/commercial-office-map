@@ -35,3 +35,8 @@ class RosterTests(unittest.TestCase):
             self.assertEqual(current['records'],previous['records'])
             self.assertEqual(current['sources'],previous['sources'])
             self.assertEqual(len(current['unavailable_sources']),1)
+            output.replace(Path(directory)/'building_roster_snapshot.json')
+            with patch('import_building_sources.download',side_effect=ConnectionError('offline')): seeded = import_sources(config,output)
+            self.assertEqual(seeded['records'],previous['records'])
+            self.assertEqual(seeded['sources'],previous['sources'])
+            self.assertIn(previous['sources']['roster']['checked_at'],seeded['unavailable_sources'][0]['unavailable_reason'])
