@@ -242,15 +242,30 @@ button.list-pagination { width: 100%; min-width: 160px; padding: 8px 16px; borde
 .source-links a { display: inline-flex; align-items: center; min-height: 44px; }
 #dataVersionText { overflow-wrap: anywhere; }
 .mobile-view-toggle { display: none; }
+.desktop-view-toggle { display: flex; gap: 4px; }
+@media (min-width: 769px) {
+  .sidebar { width: 48%; max-width: none; }
+  .app-container.mobile-list .map-wrapper, .app-container.mobile-map .sidebar { display: none; }
+  .app-container.mobile-list .sidebar { width: 100%; }
+  .sidebar-controls { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 6px; padding: 10px 14px; max-height: 40%; }
+  .sidebar-controls .search-scope-row, .sidebar-controls .search-help-row { display: none; }
+  .sidebar-controls .search-row, .sidebar-controls .advanced-filters-box { grid-column: 1 / -1; }
+  .sidebar-controls .filter-toggle-hint { display: none; }
+  .sidebar-controls .active-filters { min-width: 0; }
+  .app-container.mobile-list .client-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 480px), 1fr)); align-content: start; align-items: start; gap: 12px; }
+  .app-container.mobile-list .client-list > :not(.company-card) { grid-column: 1 / -1; }
+  .app-container.mobile-list .company-card { margin-bottom: 0; }
+}
 .view-btn { flex: 1; min-width: 0; padding: 8px 10px; border: 1px solid var(--border); border-radius: 7px; background: white; color: var(--text-muted); font-size: 14px; font-weight: 650; white-space: nowrap; }
 .view-btn.active { background: var(--blue); color: white; border-color: var(--blue); }
 .noscript-notice { position: fixed; inset: auto 16px 16px; z-index: 2500; padding: 20px; color: #78410F; background: #FFF7E7; border: 1px solid #F1D4A4; border-radius: 8px; }
 @media (max-width: 1024px) {
   .app-header { gap: 12px; padding: 10px 14px; }
   .brand-badge { display: none; }
-  .sidebar { width: 430px; max-width: 55%; }
+  .sidebar { width: 52%; max-width: none; }
 }
 @media (max-width: 768px) {
+  .desktop-view-toggle { display: none; }
   .app-header { flex-direction: column; align-items: stretch; gap: 10px; padding: 10px 12px; }
   .brand { justify-content: center; gap: 8px; }
   .brand-logo { width: 28px; height: 28px; border-radius: 6px; font-size: 18px; }

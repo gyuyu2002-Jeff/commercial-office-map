@@ -96,6 +96,7 @@
     exporting = false; pendingExport = exportAfter; rows = []; resultCount = 0; scanned = 0;
     districtCounts = {}; statusCounts = {}; addressCount = 0;
     renderFilters(); renderList(); renderMapMarkers();
+    $('clientList').scrollTop = 0;
     if (!storageProblem) notice('');
     worker.postMessage({ type: 'query', id: queryId, countyId: currentCounty, filters: { ...filters }, statuses });
   }
@@ -523,28 +524,43 @@
   }
   function directoryModes() {
     const nav = element('div', 'directory-modes'); nav.setAttribute('aria-label', '大樓查找方式');
-    nav.append(chip('大樓名稱 · 桃園優先', 'names', directoryMode === 'names', 'chip', openAllBuildingsDirectory));
+    nav.append(chip('全台大樓名稱', 'names', directoryMode === 'names', 'chip', openAllBuildingsDirectory));
     const addresses = chip('目前結果的門牌', 'addresses', directoryMode === 'addresses', 'chip', openAddressDirectory);
     addresses.disabled = !complete; nav.append(addresses); return nav;
   }
   function renderNamedDirectory() {
     const list = $('directoryRows'); if (directoryMode !== 'names' || !list) return;
-    const matches = Core.findNamedBuildings(catalog.named_buildings, $('directorySearch').value);
+    const countyId = $('directoryCounty')?.value || 'ALL';
+    const buildings = (catalog.named_buildings || []).filter(item => countyId === 'ALL' || item.county_id === countyId);
+    const matches = Core.findNamedBuildings(buildings, $('directorySearch').value);
     list.replaceChildren(element('p', 'search-hint', `找到 ${matches.length} 棟 · 名稱清冊不套用企業篩選條件`));
     matches.forEach(building => list.append(namedBuildingEntry(building)));
-    if (!matches.length) list.append(element('p', 'empty-state', '這個名稱尚未收錄。可改用街道門牌查詢；零筆不代表大樓或企業不存在。'));
+    if (!matches.length) {
+      list.append(element('p', 'empty-state', buildings.length ? '這個名稱尚未收錄。可改用街道門牌查詢；零筆不代表大樓或企業不存在。' : '本縣市的大樓名稱仍待核對；已收錄的企業與門牌仍可搜尋。'));
+      if (countyId !== 'ALL') list.append(button(`查詢${counties[countyId].name}企業與門牌`, 'card-btn', () => {
+        closeModal('modalBuilding'); resetFilters(); switchCounty(countyId);
+      }));
+    }
   }
   function openAllBuildingsDirectory(query = '') {
     if (!catalog) return;
     directoryMode = 'names'; clearTimeout(directoryTimer);
-    setText('bldModalTitle', '找大樓 · 桃園優先');
-    setText('bldModalSubtitle', `已核對 ${catalog.named_buildings?.length || 0} 棟名稱，更新 ${catalog.building_names_updated_at || '未提供'}。選大樓會切換地區、保留資本額並清除其他企業條件；僅比對列出的門牌。`);
+    setText('bldModalTitle', '找大樓 · 全台縣市');
+    setText('bldModalSubtitle', `分批核對中：${catalog.named_buildings?.length || 0} 棟名稱，更新 ${catalog.building_names_updated_at || '未提供'}。選大樓會切換地區、保留資本額並清除其他企業條件；僅比對列出的門牌。`);
+    const countySelect = element('select', 'industry-select'); countySelect.id = 'directoryCounty'; countySelect.setAttribute('aria-label', '選擇大樓所在縣市');
+    const option = (value, text) => { const node = element('option', '', text); node.value = value; return node; };
+    countySelect.append(option('ALL', '全台縣市 · 已核對名稱'));
+    for (const [id, county] of Object.entries(counties)) {
+      const count = (catalog.named_buildings || []).filter(item => item.county_id === id).length;
+      countySelect.append(option(id, `${county.name} · ${count ? `${count} 棟已核對` : '名稱待核對，可查企業門牌'}`));
+    }
+    countySelect.addEventListener('change', renderNamedDirectory);
     const search = element('input', 'directory-search'); search.type = 'search'; search.id = 'directorySearch';
     search.placeholder = '輸入招牌名稱，例如：世貿帝國'; search.setAttribute('aria-label', '搜尋大樓名稱、別名或地址');
     search.value = typeof query === 'string' ? query : '';
     search.addEventListener('input', renderNamedDirectory);
     const directoryRows = element('div', 'directory-rows'); directoryRows.id = 'directoryRows';
-    $('bldModalList').replaceChildren(directoryModes(), search, directoryRows);
+    $('bldModalList').replaceChildren(directoryModes(), countySelect, search, directoryRows);
     renderNamedDirectory(); openModal('modalBuilding'); search.focus();
   }
   function openAddressDirectory() {
@@ -631,6 +647,9 @@
     const app = $('appContainer'); app.classList.remove('mobile-list', 'mobile-split', 'mobile-map'); app.classList.add(`mobile-${view}`);
     [['btnViewList', 'list'], ['btnViewSplit', 'split'], ['btnViewMap', 'map']].forEach(([id, value]) => {
       $(id)?.classList.toggle('active', view === value); $(id)?.setAttribute('aria-pressed', String(view === value));
+    });
+    [['btnDesktopList', 'list'], ['btnDesktopSplit', 'split'], ['btnDesktopMap', 'map']].forEach(([id, value]) => {
+      $(id)?.classList.toggle('active', view === value); $(id)?.setAttribute('aria-pressed', String(view === value));
     }); if (map) setTimeout(() => map.invalidateSize(), 100);
   }
 
@@ -710,7 +729,7 @@
     bookmarkSite: () => { notice(/Mac|iPhone|iPad/.test(navigator.platform) ? '按 ⌘ + D 加入書籤；手機可由分享選單加入主畫面。' : '按 Ctrl + D 加入書籤；手機可由瀏覽器選單加入主畫面。'); closeMenus(); } });
   function start() {
     if (!Core) { notice('搜尋元件未載入，請重新整理頁面。'); return; }
-    wireEvents(); if (window.innerWidth <= 768) setMobileView('list'); boot();
+    wireEvents(); setMobileView(window.innerWidth <= 768 ? 'list' : 'split'); boot();
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start, { once: true }); else start();
 })();

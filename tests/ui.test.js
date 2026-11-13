@@ -159,3 +159,22 @@ test('main search offers name candidates even when company filters return nothin
   ui.get('directorySearch').dispatchEvent(new ui.window.Event('input'));
   assert.match(ui.get('directoryRows').textContent, /尚未收錄.*改用街道門牌/);
 });
+
+test('desktop views keep the search and allow a full-width list; national directory shows county coverage', async t => {
+  const ui = await app(t);
+  assert.ok(ui.get('appContainer').classList.contains('mobile-split'));
+  ui.get('searchInput').value = '華懋'; ui.get('btnDoSearch').click(); ui.reply([company]);
+  ui.get('clientList').scrollTop = 180;
+  ui.get('btnDesktopList').click();
+  assert.ok(ui.get('appContainer').classList.contains('mobile-list'));
+  assert.equal(ui.get('btnDesktopList').getAttribute('aria-pressed'), 'true');
+  assert.equal(ui.get('searchInput').value, '華懋'); assert.equal(ui.get('btnViewList').getAttribute('aria-pressed'), 'true');
+  ui.get('btnDesktopMap').click(); assert.ok(ui.get('appContainer').classList.contains('mobile-map'));
+  ui.get('btnDesktopSplit').click(); assert.ok(ui.get('appContainer').classList.contains('mobile-split'));
+  ui.get('btnDoSearch').click(); assert.equal(ui.get('clientList').scrollTop, 0);
+  ui.get('btnBuildingMode').click();
+  ui.get('directoryCounty').value = 'taipei'; ui.get('directoryCounty').dispatchEvent(new ui.window.Event('change'));
+  assert.match(ui.get('directoryRows').textContent, /名稱仍待核對/);
+  ui.document.querySelector('#directoryRows button').click();
+  assert.equal(ui.last().countyId, 'taipei'); assert.equal(ui.last().filters.query, '');
+});

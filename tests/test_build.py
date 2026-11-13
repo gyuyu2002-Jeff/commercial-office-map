@@ -114,7 +114,7 @@ class OfficialDataTests(unittest.TestCase):
         config = json.loads((ROOT/'config/named_buildings.json').read_text(encoding='utf-8'))
         self.assertEqual(len(catalog['named_buildings']), len(config['buildings']))
         self.assertEqual(catalog['building_name_sources'], config['sources'])
-        counts = Counter(base_building_address(row[0]) for shard in catalog['counties']['taoyuan']['shards']
+        counts = Counter(base_building_address(row[0]) for county in catalog['counties'].values() for shard in county['shards']
             for row in json.loads((ROOT/'data'/shard['path']).read_text(encoding='utf-8'))['rows'])
         for building, original in zip(catalog['named_buildings'], config['buildings']):
             self.assertEqual({key: building[key] for key in original}, original)

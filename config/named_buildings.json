@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "updated_at": "2026-11-13",
-  "coverage_note": "優先整理桃園具可核對名稱與門牌的商辦及商住混合大樓。只比對已核對門牌，未列出所有可能門牌；名稱資料不代表實地進駐查核或商業用途認定。",
+  "coverage_note": "全台縣市分批核對大樓名稱；目前含桃園及其他七縣市首批名稱。名稱、別名與門牌逐筆附公開來源，僅連結列出的核對門牌；尚未收錄名稱不代表沒有大樓或企業。企業名單仍依本期商辦稅籍篩選，不代表實際進駐查核或建築用途認定。",
   "sources": {
     "tycg_registry_20261031": {
       "title": "桃園市建築管理處：本市報備在案公寓大廈管理組織清冊",
@@ -34,6 +34,51 @@
     "chungyuet_101": {
       "title": "591：中悅環球企業總部門牌",
       "url": "https://market.591.com.tw/6535182/overview",
+      "checked_at": "2026-11-13"
+    },
+    "building_6c094b72dcfa_source": {
+      "title": "臺北旅遊網：台北101",
+      "url": "https://www.travel.taipei/zh-tw/attraction/details/217",
+      "checked_at": "2026-11-13"
+    },
+    "building_f1fb0f4ad929_source": {
+      "title": "台北世貿中心：國貿大樓簡介",
+      "url": "https://www.wtctaipei.com/Intro?Intro_tc_id=42&lc=tc",
+      "checked_at": "2026-11-13"
+    },
+    "building_51356cbd86e2_source": {
+      "title": "中信房屋：遠雄U-TOWN社區門牌",
+      "url": "https://buy.cthouse.com.tw/community/20190222150922138.html",
+      "checked_at": "2026-11-13"
+    },
+    "building_638e43501c95_source": {
+      "title": "基隆皇冠大樓銷售官網：接待中心門牌",
+      "url": "https://crowntower.ybworld.com.tw/",
+      "checked_at": "2026-11-13"
+    },
+    "building_693cf69ba304_source": {
+      "title": "輻射防護協會：帝國經貿大樓上課地點",
+      "url": "https://www.rpa.org.tw/training/train02.htm",
+      "checked_at": "2026-11-13"
+    },
+    "building_ae68149e387e_source": {
+      "title": "大橘團隊：親家T3基本資料",
+      "url": "https://www.dajuteam.com.tw/tw/about/qin-jia-t3",
+      "checked_at": "2026-11-13"
+    },
+    "building_1a624e7f192c_source": {
+      "title": "臺南市政府公寓大廈清冊：編號1215",
+      "url": "https://w3fs.tainan.gov.tw/Download.ashx?icon=.pdf&n=5YWs5a%2BT5aSn5buI5riF5YaKMDYwMDEwMS0xMDkwMTE1LnBkZg%3D%3D&u=LzAwMS9VcGxvYWQvMTU4L3JlbGZpbGUvMTg1MjcvNzYyMDc1NC8xYTYxMzk1ZS00ODdiLTQ1YTgtYjQwNC02NjhiOGM0YWI3YzQucGRm",
+      "checked_at": "2026-11-13"
+    },
+    "building_e8057420796d_source": {
+      "title": "交通部觀光署：高雄85大樓",
+      "url": "https://www.taiwan.net.tw/m1.aspx?id=9328&sNo=0001016",
+      "checked_at": "2026-11-13"
+    },
+    "kaohsiung_85_door3": {
+      "title": "591：高雄85大樓基地門牌",
+      "url": "https://market.591.com.tw/24126/overview",
       "checked_at": "2026-11-13"
     }
   },
@@ -928,6 +973,162 @@
           "range": "A111:B111",
           "name": "來鑫商業大樓",
           "address": "八德區介壽路一段919號12樓之3"
+        }
+      ]
+    },
+    {
+      "id": "building_6c094b72dcfa",
+      "name": "台北101",
+      "aliases": [
+        "TAIPEI 101"
+      ],
+      "county_id": "taipei",
+      "district": "信義區",
+      "addresses": [
+        "臺北市信義區信義路5段7號"
+      ],
+      "checked_at": "2026-11-13",
+      "references": [
+        {
+          "source_id": "building_6c094b72dcfa_source",
+          "name": "台北101",
+          "address": "臺北市信義區信義路5段7號"
+        }
+      ]
+    },
+    {
+      "id": "building_f1fb0f4ad929",
+      "name": "台北世界貿易中心國際貿易大樓",
+      "aliases": [
+        "國貿大樓"
+      ],
+      "county_id": "taipei",
+      "district": "信義區",
+      "addresses": [
+        "臺北市信義區基隆路1段333號"
+      ],
+      "checked_at": "2026-11-13",
+      "references": [
+        {
+          "source_id": "building_f1fb0f4ad929_source",
+          "name": "台北世界貿易中心國際貿易大樓",
+          "address": "臺北市信義區基隆路1段333號"
+        }
+      ]
+    },
+    {
+      "id": "building_51356cbd86e2",
+      "name": "遠雄U-TOWN",
+      "aliases": [],
+      "county_id": "new_taipei",
+      "district": "汐止區",
+      "addresses": [
+        "新北市汐止區新臺五路1段99號"
+      ],
+      "checked_at": "2026-11-13",
+      "references": [
+        {
+          "source_id": "building_51356cbd86e2_source",
+          "name": "遠雄U-TOWN",
+          "address": "新北市汐止區新臺五路1段99號"
+        }
+      ]
+    },
+    {
+      "id": "building_638e43501c95",
+      "name": "基隆皇冠商業大樓",
+      "aliases": [
+        "基隆皇冠大樓"
+      ],
+      "county_id": "keelung",
+      "district": "中正區",
+      "addresses": [
+        "基隆市中正區信一路177號"
+      ],
+      "checked_at": "2026-11-13",
+      "references": [
+        {
+          "source_id": "building_638e43501c95_source",
+          "name": "基隆皇冠商業大樓",
+          "address": "基隆市中正區信一路177號"
+        }
+      ]
+    },
+    {
+      "id": "building_693cf69ba304",
+      "name": "帝國經貿大樓",
+      "aliases": [],
+      "county_id": "hsinchu_city",
+      "district": "東區",
+      "addresses": [
+        "新竹市東區光復路2段295號"
+      ],
+      "checked_at": "2026-11-13",
+      "references": [
+        {
+          "source_id": "building_693cf69ba304_source",
+          "name": "帝國經貿大樓",
+          "address": "新竹市東區光復路2段295號"
+        }
+      ]
+    },
+    {
+      "id": "building_ae68149e387e",
+      "name": "親家T3",
+      "aliases": [],
+      "county_id": "taichung",
+      "district": "西屯區",
+      "addresses": [
+        "臺中市西屯區市政路500號"
+      ],
+      "checked_at": "2026-11-13",
+      "references": [
+        {
+          "source_id": "building_ae68149e387e_source",
+          "name": "親家T3",
+          "address": "臺中市西屯區市政路500號"
+        }
+      ]
+    },
+    {
+      "id": "building_1a624e7f192c",
+      "name": "永樺企業家大樓",
+      "aliases": [],
+      "county_id": "tainan",
+      "district": "東區",
+      "addresses": [
+        "臺南市東區大同路2段615號"
+      ],
+      "checked_at": "2026-11-13",
+      "references": [
+        {
+          "source_id": "building_1a624e7f192c_source",
+          "name": "永樺企業家大樓",
+          "address": "臺南市東區大同路2段615號"
+        }
+      ]
+    },
+    {
+      "id": "building_e8057420796d",
+      "name": "高雄85大樓",
+      "aliases": [],
+      "county_id": "kaohsiung",
+      "district": "苓雅區",
+      "addresses": [
+        "高雄市苓雅區自強三路1號",
+        "高雄市苓雅區自強三路3號"
+      ],
+      "checked_at": "2026-11-13",
+      "references": [
+        {
+          "source_id": "building_e8057420796d_source",
+          "name": "高雄85大樓",
+          "address": "高雄市苓雅區自強三路1號"
+        },
+        {
+          "source_id": "kaohsiung_85_door3",
+          "name": "高雄85大樓",
+          "address": "高雄市苓雅區自強三路3號"
         }
       ]
     }

@@ -39,6 +39,11 @@
       <span class="brand-badge" id="headerCountyBadge">桃園市</span>
     </div>
     <div class="header-actions">
+      <nav class="desktop-view-toggle" aria-label="桌面顯示方式">
+        <button type="button" class="view-btn" id="btnDesktopList" onclick="setMobileView('list')" aria-pressed="false">放大名單</button>
+        <button type="button" class="view-btn active" id="btnDesktopSplit" onclick="setMobileView('split')" aria-pressed="true">名單＋地圖</button>
+        <button type="button" class="view-btn" id="btnDesktopMap" onclick="setMobileView('map')" aria-pressed="false">地圖</button>
+      </nav>
       <button type="button" class="btn btn-county-select" id="btnCountySelect" onclick="openCountyModal()" aria-haspopup="dialog" aria-controls="modalCountySelect">
         <span id="currentCountyDisplay">桃園市</span><span aria-hidden="true">▾</span>
       </button>
@@ -198,7 +203,7 @@
           <h3>路過只知道大樓名稱</h3>
           <p>按上方「找大樓」，輸入招牌名稱，例如「世貿帝國」「國際金融廣場」「中壢中國信託」。比對地址後選取大樓，系統會切換到該縣市、清除其他公司條件，並保留目前資本額門檻。符合條件的上市櫃企業仍優先。</p>
           <p>大樓摘要列出已核對的門牌、各門牌本期收錄筆數、核對日期與來源。按「查看本棟全部收錄企業」可取消資本額及其他企業條件，保留大樓範圍。這是登記企業與潛在拜訪名單，沒有接入你們的既有客戶資料。</p>
-          <p>第一批以桃園為主，名稱搜尋不受資本額或公司條件限制，也可在主搜尋框輸入大樓名稱。尚未收錄的名稱請改用地址；零筆不代表大樓沒有企業。多門牌大樓只比對已核對門牌，登記不等於現場實際進駐。</p>
+          <p>名稱清冊按全台縣市分批核對，可從「找大樓」的縣市選單查看已核對棟數。尚未收錄名稱的地區可用「查詢本縣市企業與門牌」繼續搜尋。名稱搜尋不受資本額或公司條件限制，也可在主搜尋框輸入大樓名稱；零筆不代表大樓沒有企業。多門牌大樓只比對已核對門牌，登記不等於現場實際進駐。</p>
         </section>
         <section>
           <h3>1. 選地區，再輸入關鍵字</h3>
@@ -227,7 +232,7 @@
         <section>
           <h3>找不到時怎麼辦？</h3>
           <p>先確認縣市與條件標籤，再使用結果區的按鈕取消資本額條件、清除關鍵字或切換縣市。本站只搜尋依商辦條件收錄的官方登記資料；零筆結果不代表公司不存在。資料範圍、來源日期及更新方式可在「資料說明」查看。</p>
-          <p>手機下方可切換「名單」「分割」「地圖」；找公司時先用名單，再按需要查看區域分布。</p>
+          <p>電腦上方可選「放大名單」「名單＋地圖」「地圖」；手機下方可切換「名單」「分割」「地圖」。找公司時先用名單，再按需要查看區域分布。</p>
         </section>
       </div>
       <div class="county-modal-footer"><button type="button" class="btn-confirm-county" onclick="closeHelpModal()">開始搜尋</button></div>
@@ -257,7 +262,7 @@
         </section>
         <section>
           <h3>商辦大樓名錄與地圖範圍</h3>
-          <p>大樓名稱清冊優先整理桃園商辦與商住混合大樓，以桃園市建築管理處管理組織清冊核對名稱、地址；部分別名或其他門牌另有公開來源。各棟附核對日期與來源，不代表涵蓋桃園全部大樓，也不代表建築用途認定。名稱清冊與企業快照分開更新，並非每日自動查證招牌名稱。</p>
+          <p>大樓名稱清冊按全台縣市分批核對，桃園以建築管理處管理組織清冊為主要來源，其他地區採政府、營運單位、使用單位及不動產公開資料核對。各棟附核對日期與來源；各縣市名稱收錄進度不同，可在縣市選單查看。不代表完整覆蓋或建築用途認定。名稱清冊與企業快照分開更新，並非每日自動查證招牌名稱。</p>
           <p class="source-links"><a href="https://oba.tycg.gov.tw/News_Content.aspx?n=8696&amp;s=1620845" target="_blank" rel="noopener noreferrer">桃園市建築管理處大樓管理組織清冊</a></p>
           <p>「商辦大樓名錄」依正規化棟別地址（移除里鄰並合併中文段數寫法）彙整目前篩選結果；同一棟別門牌可能包含商務中心或多家登記企業，實際樓層與現場進駐情形仍請現勘確認。</p>
           <p>地圖標記是行政區的概覽點與樓內企業筆數，不是公司精確門牌座標。行政區概覽點由國土測繪中心公開界線資料計算；個別地址可由卡片開啟外部地圖搜尋。</p>
