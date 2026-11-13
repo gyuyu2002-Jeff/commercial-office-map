@@ -9,7 +9,7 @@ from collections import Counter
 from pathlib import Path
 from build_commercial_html import (ROOT, HEADERS, COUNTIES, COLUMNS, base_building_address, canonical_json,
     identify_commercial_buildings, locate_address, normal_address, parse_floor_number, parse_source_date,
-    prepare_data, read_tax_rows, version_content)
+    prepare_data, read_tax_rows, version_content, attach_named_buildings)
 
 class OfficialDataTests(unittest.TestCase):
     @classmethod
@@ -108,6 +108,43 @@ class OfficialDataTests(unittest.TestCase):
             self.assertEqual((info['phone'],info['chairperson'],info['website_raw']),expected)
         self.assertEqual(catalog['coverage']['listed_matches'],len(catalog['enrichment']))
         self.assertIn('dataset_url',catalog['industry_source'])
+
+    def test_named_building_provenance_exact_doors_and_counts(self):
+        catalog = json.loads((ROOT/'data/catalog.json').read_text(encoding='utf-8'))
+        config = json.loads((ROOT/'config/named_buildings.json').read_text(encoding='utf-8'))
+        self.assertEqual(len(catalog['named_buildings']), len(config['buildings']))
+        self.assertEqual(catalog['building_name_sources'], config['sources'])
+        counts = Counter(base_building_address(row[0]) for shard in catalog['counties']['taoyuan']['shards']
+            for row in json.loads((ROOT/'data'/shard['path']).read_text(encoding='utf-8'))['rows'])
+        for building, original in zip(catalog['named_buildings'], config['buildings']):
+            self.assertEqual({key: building[key] for key in original}, original)
+            self.assertEqual(building['company_count'], sum(counts[address] for address in building['addresses']))
+            self.assertEqual(building['address_counts'], {address: counts[address] for address in building['addresses']})
+        motian = next(b for b in catalog['named_buildings'] if b['name'] == '摩天金融大樓')
+        self.assertEqual(motian['addresses'], ['桃園市桃園區中正路1247號', '桃園市桃園區中正路1249號'])
+        self.assertNotIn('桃園市桃園區中正路1248號', motian['addresses'])
+        old_version = catalog['dataset_version']
+        attach_named_buildings(catalog, config, ROOT/'data')
+        self.assertEqual(catalog['dataset_version'], old_version, 'unchanged names and data give a stable version')
+        config['buildings'][0]['aliases'].append('測試別名')
+        attach_named_buildings(catalog, config, ROOT/'data')
+        self.assertNotEqual(catalog['dataset_version'], old_version)
+
+    def test_invalid_named_building_associations_stop_publication(self):
+        catalog = json.loads((ROOT/'data/catalog.json').read_text(encoding='utf-8'))
+        original = json.loads((ROOT/'config/named_buildings.json').read_text(encoding='utf-8'))
+        for failure in ('duplicate', 'floor', 'county', 'source'):
+            config = json.loads(json.dumps(original))
+            if failure == 'duplicate':
+                config['buildings'].append(config['buildings'][0])
+            elif failure == 'floor':
+                config['buildings'][0]['addresses'][0] += '8樓'
+            elif failure == 'county':
+                config['buildings'][0]['county_id'] = 'taipei'
+            else:
+                config['buildings'][0]['references'][0]['source_id'] = 'missing'
+            with self.subTest(failure=failure), self.assertRaises(ValueError):
+                attach_named_buildings(catalog, config, ROOT/'data')
 
     def test_commercial_building_filter_keeps_office_towers_and_excludes_street_shops(self):
         self.assertEqual(base_building_address('桃園市桃園區同德里中正路１０７１號１４樓之６'), '桃園市桃園區中正路1071號')

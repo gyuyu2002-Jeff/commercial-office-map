@@ -17,6 +17,12 @@ async function app(t) {
   const county = name => ({ name, company_count: 2, center: [25, 121], districts: [{ id: 'D1', name: '中壢區', company_count: 2 }], shards: [] });
   const catalog = { schema_version: 2, data_mode: 'official', dataset_version: 'a'.repeat(64), columns: Core.SOURCE_COLUMNS,
     source: {}, counties: { taoyuan: county('桃園市'), taipei: county('臺北市') },
+    named_buildings: [
+      { id: 'tower', name: '測試商辦大樓', aliases: ['測試商辦'], county_id: 'taoyuan', addresses: ['桃園市中壢區測試路1號', '桃園市中壢區測試路3號'],
+        company_count: 2, address_counts: { '桃園市中壢區測試路1號': 1, '桃園市中壢區測試路3號': 1 }, checked_at: '2026-11-13', references: [{ source_id: 'registry' }] },
+      { id: 'empty_tower', name: '未收錄企業大樓', aliases: [], county_id: 'taoyuan', addresses: ['桃園市中壢區測試路5號'],
+        company_count: 0, address_counts: { '桃園市中壢區測試路5號': 0 }, checked_at: '2026-11-13', references: [{ source_id: 'registry' }] }
+    ], building_names_updated_at: '2026-11-13', building_name_sources: { registry: { title: '測試來源', url: 'https://example.invalid/registry' } },
     industry_sections: { '45': '批發業', '46': '批發業', '47': '零售業', '48': '零售業', '62': '電腦程式設計', '63': '資訊服務' },
     enrichment: { '23492169': { market: '上市', stock_code: '5292', phone: '(03)4272889', chairperson: '鄭石治' } } };
   let onMessage;
@@ -116,4 +122,40 @@ test('help opens from the visible control, closes with Escape and restores keybo
   ui.document.dispatchEvent(new ui.window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
   assert.equal(ui.get('modalHelp').hidden, true);
   assert.equal(ui.document.activeElement, trigger);
+});
+
+test('building directory works before company search finishes and selection preserves only capital', async t => {
+  const ui = await app(t);
+  ui.window.switchCounty('taipei');
+  ui.get('searchInput').value = '別的公司'; ui.get('btnDoSearch').click();
+  ui.document.querySelector('[data-market="LISTED"]').click();
+  ui.document.querySelector('[data-status="已拜訪"]').click();
+  ui.get('btnBuildingMode').click();
+  assert.equal(ui.get('modalBuilding').style.display, 'flex');
+  assert.equal(ui.document.querySelectorAll('#directoryRows .building-directory-entry').length, 2);
+  assert.match(ui.get('directoryRows').textContent, /本期企業名單未收錄.*不代表沒有企業/);
+  ui.get('directorySearch').value = '測試商辦'; ui.get('directorySearch').dispatchEvent(new ui.window.Event('input'));
+  assert.equal(ui.document.querySelectorAll('#directoryRows .building-directory-entry').length, 1);
+  ui.document.querySelector('#directoryRows .building-directory-entry').click();
+  assert.equal(ui.last().countyId, 'taoyuan'); assert.equal(ui.last().filters.buildingId, 'tower');
+  assert.equal(ui.last().filters.query, ''); assert.equal(ui.last().filters.capital, 'MIN_10M');
+  assert.equal(ui.last().filters.market, 'ALL'); assert.equal(ui.last().filters.status, 'ALL');
+  assert.equal(ui.get('searchInput').value, '');
+  assert.match(ui.get('activeFilters').textContent, /測試商辦大樓/);
+  assert.equal(ui.document.querySelector('#selectedBuilding a').href, 'https://example.invalid/registry');
+  ui.document.querySelector('#selectedBuilding button').click();
+  assert.equal(ui.last().filters.buildingId, 'tower'); assert.equal(ui.last().filters.capital, 'ALL');
+  ui.window.switchCounty('taipei'); assert.equal(ui.last().filters.buildingId, '');
+});
+
+test('main search offers name candidates even when company filters return nothing', async t => {
+  const ui = await app(t);
+  ui.get('searchInput').value = '測試商辦'; ui.get('btnDoSearch').click(); ui.reply([]);
+  assert.match(ui.get('buildingCandidates').textContent, /測試商辦大樓/);
+  ui.document.querySelector('#buildingCandidates .building-directory-entry').click();
+  assert.equal(ui.last().filters.buildingId, 'tower'); assert.equal(ui.last().filters.query, '');
+  ui.document.querySelector('#districtNavBar [data-value="D1"]').click(); assert.equal(ui.last().filters.buildingId, '');
+  ui.get('btnBuildingMode').click(); ui.get('directorySearch').value = '尚未查證名稱';
+  ui.get('directorySearch').dispatchEvent(new ui.window.Event('input'));
+  assert.match(ui.get('directoryRows').textContent, /尚未收錄.*改用街道門牌/);
 });

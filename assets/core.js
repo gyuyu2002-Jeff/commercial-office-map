@@ -126,13 +126,30 @@
       ? `${year}-${text.slice(3, 5)}-${text.slice(5, 7)}` : text;
   }
 
-  function matchesRow(row, filters, statuses, enrichment, ignoreStatus = false) {
+  function buildingNameIndex(buildings) {
+    const index = Object.create(null);
+    for (const building of buildings || []) {
+      for (const address of building.addresses) index[buildingBaseAddress(address)] = [building.name, ...building.aliases];
+    }
+    return index;
+  }
+
+  function findNamedBuildings(buildings, query) {
+    const terms = searchTerms(query).map(term => normalizeText(buildingBaseAddress(term)));
+    return (buildings || []).filter(building => {
+      const values = [building.name, ...building.aliases, ...building.addresses].map(normalizeText);
+      return terms.every(term => values.some(value => value.includes(term)));
+    });
+  }
+
+  function matchesRow(row, filters, statuses, enrichment, ignoreStatus = false, buildingNames = {}) {
     if (filters.district !== 'all' && row[16] !== filters.district) return false;
     if (filters.category !== 'ALL' && !filters.category.split(',').includes(String(row[8] || '').slice(0, 2) || 'UNKNOWN')) return false;
     if (filters.capital === 'MIN_10M') {
       if (capitalTier(row[4]) === 'UNKNOWN' || Number(row[4]) < 10000000) return false;
     } else if (filters.capital !== 'ALL' && capitalTier(row[4]) !== filters.capital) return false;
     if (filters.address && buildingBaseAddress(row[0]) !== buildingBaseAddress(filters.address) && row[0] !== filters.address) return false;
+    if (filters.buildingId && !filters.buildingAddresses?.includes(buildingBaseAddress(row[0]))) return false;
     const info = enrichment[String(row[1])] || {};
     if (filters.market === 'LISTED' && !['上市', '上櫃'].includes(info.market)) return false;
     if (['上市', '上櫃'].includes(filters.market) && info.market !== filters.market) return false;
@@ -141,7 +158,8 @@
     }
     const terms = filters.queryTerms || searchTerms(filters.query);
     if (!terms.length) return true;
-    const values = [row[0], row[1], row[2], row[3], row[9], row[11], row[13], row[15], info.stock_code, info.chairperson].map(normalizeText);
+    const names = buildingNames[buildingBaseAddress(row[0])] || [];
+    const values = [row[0], buildingBaseAddress(row[0]), row[1], row[2], row[3], row[9], row[11], row[13], row[15], info.stock_code, info.chairperson, ...names].map(normalizeText);
     return terms.every(term => values.some(value => value.includes(term)));
   }
 
@@ -153,6 +171,6 @@
   }
 
   return { STATUSES, BACKUP_KIND, MAX_BACKUP_BYTES, MAX_STATUS_RECORDS, MAX_EXPORT_ROWS, DEFAULT_CAPITAL, SOURCE_COLUMNS, CSV_HEADERS,
-    isRecord, normalizeText, searchTerms, buildingBaseAddress, companyId, validateStatuses, validateBackup, loadStoredStatuses, mergeStatuses,
+    isRecord, normalizeText, searchTerms, buildingBaseAddress, buildingNameIndex, findNamedBuildings, companyId, validateStatuses, validateBackup, loadStoredStatuses, mergeStatuses,
     csvCell, csvLine, csvDocument, safeURL, phoneURL, capitalTier, formatCapital, compactCapital, formatEstablished, matchesRow, exportRow };
 });

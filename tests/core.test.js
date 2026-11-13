@@ -245,6 +245,36 @@ test('listed companies lead in every capital mode without excluding other matche
   });
 });
 
+test('verified building aliases match exact doors; multi-door selection excludes neighbours and respects capital', async () => {
+  const h = workerHarness(), records = Array.from({ length: 5 }, (_, i) => row(i));
+  const addresses = ['桃園市桃園區中正路1247號', '桃園市桃園區中正路1249號'];
+  records.forEach((record, i) => {
+    record[0] = `桃園市桃園區同德里中正路${[1247, 1249, 1248, 124, 1247][i]}號8樓`;
+    record[4] = i === 4 ? '9999999' : '10000000';
+  });
+  const building = { id: 'tower', name: '測試金融大樓', aliases: ['測試金融中心'], addresses, county_id: 'taoyuan' };
+  h.catalog.named_buildings = [building]; h.catalog.enrichment[records[1][1]] = { market: '上櫃' };
+  h.addCounty('taoyuan', [records.slice(0, 2), records.slice(2)]); await h.initialize();
+  for (const query of ['測試金融中心 桃園', '測試金融大樓']) {
+    await h.send({ type: 'query', id: 21, countyId: 'taoyuan', filters: { ...filters(), capital: 'MIN_10M', query }, statuses: {} });
+    const done = h.messages.filter(message => message.type === 'done').at(-1);
+    assert.deepEqual(done.rows.map(record => record[1]), ['00000002', '00000001']);
+  }
+  await h.send({ type: 'query', id: 22, countyId: 'taoyuan', filters: { ...filters(), buildingId: 'tower' }, statuses: {} });
+  const all = h.messages.filter(message => message.type === 'done').at(-1);
+  assert.equal(all.count, 3);
+  await h.send({ type: 'export', id: 22 });
+  const csv = await h.messages.filter(message => message.type === 'export').at(-1).blob.text();
+  assert.ok(csv.includes('"00000005"') && !csv.includes('"00000003"') && !csv.includes('"00000004"'));
+  await h.send({ type: 'query', id: 23, countyId: 'taoyuan', filters: { ...filters(), buildingId: 'missing' }, statuses: {} });
+  assert.ok(h.messages.some(message => message.type === 'error' && message.id === 23));
+  assert.ok(!h.messages.some(message => message.type === 'done' && message.id === 23));
+  assert.equal(Core.matchesRow(records[0], { ...filters(), query: addresses[0] }, {}, {}), true, 'canonical address also matches a source address containing a village');
+  assert.equal(Core.findNamedBuildings([building], '金融中心 桃園').length, 1);
+  assert.equal(Core.findNamedBuildings([building], '中正路1248號').length, 0);
+  assert.equal(Core.findNamedBuildings([{ ...building, addresses: ['桃園市桃園區大興西路2段6號'] }], '大興西路二段6號').length, 1);
+});
+
 test('worker applies visit status, normalized search, and real address grouping consistently', async () => {
   const h = workerHarness(); h.addCounty('taipei', [[row(0), row(1), row(2)]]); await h.initialize();
   await h.send({ type: 'query', id: 2, countyId: 'taipei', filters: { ...filters(), status: '尚未拜訪', query: '台北' }, statuses: { tax_00000001: '已拜訪' } });

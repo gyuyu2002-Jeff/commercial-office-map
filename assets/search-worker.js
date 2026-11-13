@@ -1,7 +1,7 @@
 'use strict';
 importScripts('core.js' + self.location.search);
 const Core = self.CommercialMapCore;
-let catalog, current;
+let catalog, current, buildingNames;
 const cache = new Map();
 const CACHE_LIMIT = 3;
 
@@ -54,8 +54,10 @@ async function query(message) {
   if (current) current.controller.abort();
   const county = catalog.counties[message.countyId];
   if (!county) throw new Error('找不到此縣市資料。');
+  const building = (catalog.named_buildings || []).find(item => item.id === message.filters.buildingId && item.county_id === message.countyId);
+  if (message.filters.buildingId && !building) throw new Error('找不到此大樓的核對門牌，請重新選擇大樓。');
   const job = { id: message.id, countyId: message.countyId, controller: new AbortController(),
-    filters: { ...message.filters, queryTerms: Core.searchTerms(message.filters.query) }, statuses: Core.validateStatuses(message.statuses),
+    filters: { ...message.filters, buildingAddresses: building?.addresses, queryTerms: Core.searchTerms(message.filters.query) }, statuses: Core.validateStatuses(message.statuses),
     matches: [], otherMatches: [], count: 0, scanned: 0, total: county.company_count, preview: [[], []], districtCounts: Object.create(null),
     statusCounts: { ALL: 0, LISTED: 0, 尚未拜訪: 0, 洽談中: 0, 已拜訪: 0 },
     addresses: new Map(), complete: false };
@@ -64,7 +66,7 @@ async function query(message) {
     const rows = await readRows(shard, job), hits = [[], []];
     for (let index = 0; index < rows.length; index++) {
       const row = rows[index];
-      if (!Core.matchesRow(row, job.filters, job.statuses, catalog.enrichment, true)) continue;
+      if (!Core.matchesRow(row, job.filters, job.statuses, catalog.enrichment, true, buildingNames)) continue;
       const visit = job.statuses[Core.companyId(row[1])] || Core.STATUSES[0];
       const listed = ['上市', '上櫃'].includes(catalog.enrichment[String(row[1])]?.market);
       job.statusCounts.ALL++;
@@ -143,7 +145,7 @@ async function exportCSV(message) {
 self.addEventListener('message', async event => {
   const message = event.data;
   try {
-    if (message.type === 'init') { catalog = message.catalog; cache.clear(); return; }
+    if (message.type === 'init') { catalog = message.catalog; buildingNames = Core.buildingNameIndex(catalog.named_buildings); cache.clear(); return; }
     if (message.type === 'cancel') { if (current) current.controller.abort(); return; }
     if (!catalog) throw new Error('資料目錄尚未載入。');
     if (message.type === 'query') await query(message);

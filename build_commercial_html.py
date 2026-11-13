@@ -310,6 +310,44 @@ def prepare_data(archive, output, geography, manifest, enrichment, industry_sect
     (output / 'catalog.json').write_text(canonical_json(catalog) + '\n', encoding='utf-8')
     return catalog
 
+def attach_named_buildings(catalog, config, data_dir):
+    if config.get('schema_version') != 1 or not config.get('buildings'):
+        raise ValueError('Named-building configuration is missing or invalid')
+    sources = config['sources']
+    for source in sources.values():
+        if urlsplit(source['url']).scheme != 'https' or not source.get('checked_at'):
+            raise ValueError('Named-building sources require an HTTPS URL and verification date')
+    seen_ids, seen_addresses, counts = set(), set(), {}
+    buildings = []
+    for building in config['buildings']:
+        county = catalog['counties'].get(building['county_id'])
+        addresses = building['addresses']
+        if (not county or building['id'] in seen_ids or not building['name'].strip()
+                or not addresses or not building.get('references') or not building.get('checked_at')
+                or building['district'] not in {d['name'] for d in county['districts']}):
+            raise ValueError('Invalid named-building identity, district or provenance')
+        for reference in building['references']:
+            if reference['source_id'] not in sources:
+                raise ValueError('Unknown named-building source')
+        for address in addresses:
+            if (address in seen_addresses or base_building_address(address) != address
+                    or not address.startswith(county['name'] + building['district']) or not address.endswith('號')):
+                raise ValueError(f'Named-building address must be a unique, exact canonical door: {address}')
+            seen_addresses.add(address)
+        seen_ids.add(building['id'])
+        if building['county_id'] not in counts:
+            counts[building['county_id']] = Counter(
+                base_building_address(row[0]) for shard in county['shards']
+                for row in json.loads((data_dir / shard['path']).read_text(encoding='utf-8'))['rows'])
+        address_counts = {address: counts[building['county_id']][address] for address in addresses}
+        buildings.append(dict(building, address_counts=address_counts, company_count=sum(address_counts.values())))
+    catalog.update(named_buildings=buildings, building_name_sources=sources,
+        building_names_updated_at=config['updated_at'], building_names_coverage=config['coverage_note'])
+    # Names, aliases and door associations are part of the published data version.
+    content = {key: value for key, value in catalog.items() if key not in ('dataset_version', 'app_version')}
+    catalog['dataset_version'] = hashlib.sha256(canonical_json(version_content(content)).encode('utf-8')).hexdigest()
+
+
 def build_site(root=ROOT, output=None, source_dir=None, download=False):
     root = Path(root).resolve()
     output = Path(output).resolve() if output else root / 'dist'
@@ -331,6 +369,7 @@ def build_site(root=ROOT, output=None, source_dir=None, download=False):
                 raise ValueError('Unexpected generated-data directory')
             shutil.rmtree(target)
     catalog = prepare_data(source_dir / 'BGMOPEN1.zip', output / 'data', geography, manifest, stock_enrichment(source_dir), sections)
+    attach_named_buildings(catalog, json.loads((root / 'config/named_buildings.json').read_text(encoding='utf-8')), output / 'data')
     catalog['app_version'] = hashlib.sha256(b''.join((root / asset).read_bytes() for asset in
         ('assets/app.js', 'assets/core.js', 'assets/search-worker.js'))).hexdigest()[:16]
     (output / 'data' / 'catalog.json').write_text(canonical_json(catalog) + '\n', encoding='utf-8')

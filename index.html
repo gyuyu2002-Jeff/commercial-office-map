@@ -22,10 +22,10 @@
   <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
   <link rel="stylesheet" href="assets/vendor/leaflet/leaflet.css">
-  <link rel="stylesheet" href="assets/styles.css?v=de62169f081e">
+  <link rel="stylesheet" href="assets/styles.css?v=29f751e49fef">
   <script src="assets/vendor/leaflet/leaflet.js" defer></script>
-  <script src="assets/core.js?v=217ff779564b" defer></script>
-  <script src="assets/app.js?v=693ce8c3340c" defer></script>
+  <script src="assets/core.js?v=984b1acaa02e" defer></script>
+  <script src="assets/app.js?v=d2595efb380b" defer></script>
 </head>
 <body>
   <a class="skip-link" href="#searchInput">跳至搜尋與名單</a>
@@ -42,7 +42,7 @@
       <button type="button" class="btn btn-county-select" id="btnCountySelect" onclick="openCountyModal()" aria-haspopup="dialog" aria-controls="modalCountySelect">
         <span id="currentCountyDisplay">桃園市</span><span aria-hidden="true">▾</span>
       </button>
-      <button type="button" class="btn btn-gold" id="btnBuildingMode" onclick="openAllBuildingsDirectory()" aria-haspopup="dialog" aria-controls="modalBuilding">商辦大樓名錄</button>
+      <button type="button" class="btn btn-gold" id="btnBuildingMode" onclick="openAllBuildingsDirectory()" aria-haspopup="dialog" aria-controls="modalBuilding">找大樓</button>
       <details class="more-actions">
         <summary class="btn" aria-label="更多功能">更多 <span aria-hidden="true">▾</span></summary>
         <div class="more-actions-panel">
@@ -75,9 +75,9 @@
         </div>
         <div class="search-row" role="search">
           <div class="search-input-wrapper">
-            <label class="sr-only" for="searchInput">搜尋公司名稱、統編、股票代號或地址</label>
+            <label class="sr-only" for="searchInput">搜尋大樓名稱、公司名稱、統編、股票代號或地址</label>
             <span class="search-icon-left" aria-hidden="true">⌕</span>
-            <input type="search" id="searchInput" placeholder="公司、統編、股票代號或地址" list="searchSuggestions" aria-describedby="searchHint" autocomplete="off" enterkeyhint="search">
+            <input type="search" id="searchInput" placeholder="大樓、公司、統編或地址" list="searchSuggestions" aria-describedby="searchHint" autocomplete="off" enterkeyhint="search">
             <datalist id="searchSuggestions"></datalist>
             <button type="button" id="btnClearSearch" class="search-clear-btn" aria-label="清除搜尋">×</button>
           </div>
@@ -85,7 +85,7 @@
         </div>
 
         <div class="search-help-row">
-          <p id="searchHint" class="search-hint">多個關鍵字用空白分開，例如：華懋 中壢</p>
+          <p id="searchHint" class="search-hint">看到大樓招牌？按「找大樓」，例如：世貿帝國</p>
           <button type="button" class="text-button" onclick="openHelpModal()" aria-haspopup="dialog" aria-controls="modalHelp">使用說明</button>
         </div>
         <div id="activeFilters" class="active-filters" role="group" aria-label="已套用條件，點選可取消"></div>
@@ -195,6 +195,12 @@
           <p>先顯示資本額 1,000 萬元以上（含）的企業，上市、上櫃公司排在前面，其餘符合條件的企業也會保留。縣市預設為桃園市，或你上次選擇記住的縣市。</p>
         </section>
         <section>
+          <h3>路過只知道大樓名稱</h3>
+          <p>按上方「找大樓」，輸入招牌名稱，例如「世貿帝國」「國際金融廣場」「中壢中國信託」。比對地址後選取大樓，系統會切換到該縣市、清除其他公司條件，並保留目前資本額門檻。符合條件的上市櫃企業仍優先。</p>
+          <p>大樓摘要列出已核對的門牌、各門牌本期收錄筆數、核對日期與來源。按「查看本棟全部收錄企業」可取消資本額及其他企業條件，保留大樓範圍。這是登記企業與潛在拜訪名單，沒有接入你們的既有客戶資料。</p>
+          <p>第一批以桃園為主，名稱搜尋不受資本額或公司條件限制，也可在主搜尋框輸入大樓名稱。尚未收錄的名稱請改用地址；零筆不代表大樓沒有企業。多門牌大樓只比對已核對門牌，登記不等於現場實際進駐。</p>
+        </section>
+        <section>
           <h3>1. 選地區，再輸入關鍵字</h3>
           <p>按「切換縣市」選擇範圍，再從上方列選行政區。搜尋可輸入公司名稱、統編、股票代號或地址，也可組合輸入「華懋 中壢」；每個空白分隔的關鍵字都要符合，但可分別出現在名稱或地址等不同欄位。</p>
           <p>台／臺、全形／半形與英文字母大小寫都會自動統一比對。停止輸入後會自動搜尋，也可按 Enter 或「搜尋」。輸入建議最多顯示六家符合目前條件的真實收錄企業，可直接選取名稱。</p>
@@ -209,7 +215,7 @@
         <section>
           <h3>3. 看公司與大樓資料</h3>
           <p>卡片先顯示統編、登記地址、資本額及主要行業。「查看完整資料」保留完整金額、設立日期、組織別、統一發票、所有登記行業與有提供的上市櫃資訊。未提供的欄位不會自行補填。</p>
-          <p>「商辦大樓名錄」依目前篩選結果的棟別地址彙整；選取大樓後，再列出同樣符合目前條件的企業。若要看該棟全部收錄企業，可取消資本額及其他條件，保留大樓地址。</p>
+          <p>「找大樓 → 目前結果的門牌」依目前篩選結果的棟別地址彙整；選取門牌後，保留其他企業條件。名稱清冊與目前結果的門牌清冊範圍不同，前者只包含已查證名稱的大樓。</p>
           <p>「查登記地址」會開啟外部地圖搜尋。本站地圖的圓點與數量是行政區概覽，不是公司的精確位置；登記地址也不保證實際進駐情況。</p>
         </section>
         <section>
@@ -251,6 +257,8 @@
         </section>
         <section>
           <h3>商辦大樓名錄與地圖範圍</h3>
+          <p>大樓名稱清冊優先整理桃園商辦與商住混合大樓，以桃園市建築管理處管理組織清冊核對名稱、地址；部分別名或其他門牌另有公開來源。各棟附核對日期與來源，不代表涵蓋桃園全部大樓，也不代表建築用途認定。名稱清冊與企業快照分開更新，並非每日自動查證招牌名稱。</p>
+          <p class="source-links"><a href="https://oba.tycg.gov.tw/News_Content.aspx?n=8696&amp;s=1620845" target="_blank" rel="noopener noreferrer">桃園市建築管理處大樓管理組織清冊</a></p>
           <p>「商辦大樓名錄」依正規化棟別地址（移除里鄰並合併中文段數寫法）彙整目前篩選結果；同一棟別門牌可能包含商務中心或多家登記企業，實際樓層與現場進駐情形仍請現勘確認。</p>
           <p>地圖標記是行政區的概覽點與樓內企業筆數，不是公司精確門牌座標。行政區概覽點由國土測繪中心公開界線資料計算；個別地址可由卡片開啟外部地圖搜尋。</p>
           <p class="source-links"><a href="https://data.gov.tw/dataset/7441" target="_blank" rel="noopener noreferrer">國土測繪中心鄉鎮市區界線</a></p>

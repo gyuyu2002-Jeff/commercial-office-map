@@ -1,0 +1,935 @@
+{
+  "schema_version": 1,
+  "updated_at": "2026-11-13",
+  "coverage_note": "優先整理桃園具可核對名稱與門牌的商辦及商住混合大樓。只比對已核對門牌，未列出所有可能門牌；名稱資料不代表實地進駐查核或商業用途認定。",
+  "sources": {
+    "tycg_registry_20261031": {
+      "title": "桃園市建築管理處：本市報備在案公寓大廈管理組織清冊",
+      "url": "https://oba.tycg.gov.tw/News_Content.aspx?n=8696&s=1620845",
+      "download_url": "https://ws.tycg.gov.tw/Download.ashx?n=5qGD5ZyS5biC5ZCE5Y2A5YWs5a%2BT5aSn5buI5oiQ56uL57WE57mU5aCx5YKZ5Lu25pW4KOe1seioiOizh%2BaWmeaIquiHszExNeW5tDEw5pyIMzHml6UpLnhsc3g%3D&u=LzAwMS9VcGxvYWQvMTA5L3JlbGZpbGUvMTI2MzgvMTYyMDg0NS84NDA2ZDZkMy0zZmViLTRlNWUtOGRkNC0wZWM4ZjdkMDYzMGEueGxzeA%3D%3D",
+      "source_date": "2026-10-31",
+      "checked_at": "2026-11-13",
+      "sha256": "f7a18305fcd2f2a6a9d38f54ab91912e35a4fdfaaeee5d0037d229c0416fbc5c"
+    },
+    "rotary_shimao": {
+      "title": "扶輪社公開手冊：世貿帝國商業大樓地址",
+      "url": "https://www.taiwan-rotary.org/upload/article_file/20240719112810.pdf",
+      "checked_at": "2026-11-13"
+    },
+    "motian_1247": {
+      "title": "樂居：摩天金融大樓門牌",
+      "url": "https://www.leju.com.tw/community/L516996660f098",
+      "checked_at": "2026-11-13"
+    },
+    "motian_1249": {
+      "title": "峰陽國際公司介紹：摩天金融大樓分館地址",
+      "url": "https://www.104.com.tw/company/1a2x6bnb6b",
+      "checked_at": "2026-11-13"
+    },
+    "if_center": {
+      "title": "峰陽國際公司介紹：IF國際經貿大樓地址",
+      "url": "https://www.104.com.tw/company/1a2x6bnb6b",
+      "checked_at": "2026-11-13"
+    },
+    "chungyuet_101": {
+      "title": "591：中悅環球企業總部門牌",
+      "url": "https://market.591.com.tw/6535182/overview",
+      "checked_at": "2026-11-13"
+    }
+  },
+  "buildings": [
+    {
+      "id": "building_ac4e9cadb428",
+      "name": "經貿天下大樓",
+      "aliases": [],
+      "county_id": "taoyuan",
+      "district": "桃園區",
+      "addresses": [
+        "桃園市桃園區力行路5號"
+      ],
+      "checked_at": "2026-11-13",
+      "references": [
+        {
+          "source_id": "tycg_registry_20261031",
+          "sheet": "桃園區",
+          "range": "A3:B3",
+          "name": "經貿天下大樓管理委員會",
+          "address": "桃園區力行路5號4樓之1"
+        }
+      ]
+    },
+    {
+      "id": "building_0bea4e9c1e12",
+      "name": "企業帝國大樓",
+      "aliases": [],
+      "county_id": "taoyuan",
+      "district": "桃園區",
+      "addresses": [
+        "桃園市桃園區三民路3段284號"
+      ],
+      "checked_at": "2026-11-13",
+      "references": [
+        {
+          "source_id": "tycg_registry_20261031",
+          "sheet": "桃園區",
+          "range": "A26:B26",
+          "name": "企業帝國大樓管理委員會",
+          "address": "桃園區三民路三段284號5樓"
+        }
+      ]
+    },
+    {
+      "id": "building_61e8c984beec",
+      "name": "企業家辦公大樓",
+      "aliases": [],
+      "county_id": "taoyuan",
+      "district": "桃園區",
+      "addresses": [
+        "桃園市桃園區大興西路2段61號"
+      ],
+      "checked_at": "2026-11-13",
+      "references": [
+        {
+          "source_id": "tycg_registry_20261031",
+          "sheet": "桃園區",
+          "range": "A159:B159",
+          "name": "企業家辦公大樓管理委員會",
+          "address": "桃園區大興西路二段61號12樓"
+        }
+      ]
+    },
+    {
+      "id": "building_3cd2965b7910",
+      "name": "國際金融廣場",
+      "aliases": [],
+      "county_id": "taoyuan",
+      "district": "桃園區",
+      "addresses": [
+        "桃園市桃園區大興西路2段6號"
+      ],
+      "checked_at": "2026-11-13",
+      "references": [
+        {
+          "source_id": "tycg_registry_20261031",
+          "sheet": "桃園區",
+          "range": "A162:B162",
+          "name": "國際金融廣場",
+          "address": "桃園區大興西路二段6號"
+        }
+      ]
+    },
+    {
+      "id": "building_a180ba808c1a",
+      "name": "都會商業",
+      "aliases": [],
+      "county_id": "taoyuan",
+      "district": "桃園區",
+      "addresses": [
+        "桃園市桃園區中山路486號"
+      ],
+      "checked_at": "2026-11-13",
+      "references": [
+        {
+          "source_id": "tycg_registry_20261031",
+          "sheet": "桃園區",
+          "range": "A211:B211",
+          "name": "都會商業",
+          "address": "桃園區中山路486號"
+        }
+      ]
+    },
+    {
+      "id": "building_a25395e43196",
+      "name": "世貿帝國大樓",
+      "aliases": [
+        "世貿帝國",
+        "世貿帝國商業大樓"
+      ],
+      "county_id": "taoyuan",
+      "district": "桃園區",
+      "addresses": [
+        "桃園市桃園區中正路1071號"
+      ],
+      "checked_at": "2026-11-13",
+      "references": [
+        {
+          "source_id": "tycg_registry_20261031",
+          "sheet": "桃園區",
+          "range": "A254:B254",
+          "name": "世貿帝國大樓",
+          "address": "桃園區中正路1071號"
+        },
+        {
+          "source_id": "rotary_shimao",
+          "name": "世貿帝國商業大樓",
+          "address": "桃園市桃園區中正路1071號20樓"
+        }
+      ]
+    },
+    {
+      "id": "building_71cb842a8262",
+      "name": "國泰同德金融大樓",
+      "aliases": [],
+      "county_id": "taoyuan",
+      "district": "桃園區",
+      "addresses": [
+        "桃園市桃園區中正路1125號"
+      ],
+      "checked_at": "2026-11-13",
+      "references": [
+        {
+          "source_id": "tycg_registry_20261031",
+          "sheet": "桃園區",
+          "range": "A258:B258",
+          "name": "國泰同德金融大樓管理負責人",
+          "address": "桃園區中正路1125號等"
+        }
+      ]
+    },
+    {
+      "id": "building_639d9ec667d9",
+      "name": "摩天金融大樓",
+      "aliases": [],
+      "county_id": "taoyuan",
+      "district": "桃園區",
+      "addresses": [
+        "桃園市桃園區中正路1247號",
+        "桃園市桃園區中正路1249號"
+      ],
+      "checked_at": "2026-11-13",
+      "references": [
+        {
+          "source_id": "tycg_registry_20261031",
+          "sheet": "桃園區",
+          "range": "A263:B263",
+          "name": "摩天金融大樓",
+          "address": "桃園區中正路1247-1249號"
+        },
+        {
+          "source_id": "motian_1247",
+          "name": "摩天金融大樓",
+          "address": "桃園市桃園區中正路1247號"
+        },
+        {
+          "source_id": "motian_1249",
+          "name": "摩天金融大樓",
+          "address": "桃園市桃園區中正路1249號"
+        }
+      ]
+    },
+    {
+      "id": "building_45be967b1e6d",
+      "name": "iF國際經貿中心",
+      "aliases": [
+        "IF國際經貿大樓"
+      ],
+      "county_id": "taoyuan",
+      "district": "桃園區",
+      "addresses": [
+        "桃園市桃園區中正路1351號"
+      ],
+      "checked_at": "2026-11-13",
+      "references": [
+        {
+          "source_id": "tycg_registry_20261031",
+          "sheet": "桃園區",
+          "range": "A269:B269",
+          "name": "iF國際經貿中心管理委員會",
+          "address": "桃園區中正路1351號等"
+        },
+        {
+          "source_id": "if_center",
+          "name": "IF國際經貿大樓",
+          "address": "桃園市桃園區中正路1351號12樓"
+        }
+      ]
+    },
+    {
+      "id": "building_917a43c308ac",
+      "name": "世界商業廣場",
+      "aliases": [],
+      "county_id": "taoyuan",
+      "district": "桃園區",
+      "addresses": [
+        "桃園市桃園區中正路60號"
+      ],
+      "checked_at": "2026-11-13",
+      "references": [
+        {
+          "source_id": "tycg_registry_20261031",
+          "sheet": "桃園區",
+          "range": "A283:B283",
+          "name": "世界商業廣場管理委員會",
+          "address": "桃園區中正路60號B2"
+        }
+      ]
+    },
+    {
+      "id": "building_97d0af6f1b82",
+      "name": "鑫華通商大樓",
+      "aliases": [],
+      "county_id": "taoyuan",
+      "district": "桃園區",
+      "addresses": [
+        "桃園市桃園區中華路33號"
+      ],
+      "checked_at": "2026-11-13",
+      "references": [
+        {
+          "source_id": "tycg_registry_20261031",
+          "sheet": "桃園區",
+          "range": "A343:B343",
+          "name": "鑫華通商大樓",
+          "address": "桃園區中華路33號"
+        }
+      ]
+    },
+    {
+      "id": "building_e7b3f6c46873",
+      "name": "巴黎站前商業住宅大樓",
+      "aliases": [],
+      "county_id": "taoyuan",
+      "district": "桃園區",
+      "addresses": [
+        "桃園市桃園區中華路3號"
+      ],
+      "checked_at": "2026-11-13",
+      "references": [
+        {
+          "source_id": "tycg_registry_20261031",
+          "sheet": "桃園區",
+          "range": "A344:B344",
+          "name": "巴黎站前商業住宅大樓社區管理負責人",
+          "address": "桃園區中華路3號16樓之4"
+        }
+      ]
+    },
+    {
+      "id": "building_de1d70485601",
+      "name": "藍海帝國企業大樓",
+      "aliases": [],
+      "county_id": "taoyuan",
+      "district": "桃園區",
+      "addresses": [
+        "桃園市桃園區文中路491號"
+      ],
+      "checked_at": "2026-11-13",
+      "references": [
+        {
+          "source_id": "tycg_registry_20261031",
+          "sheet": "桃園區",
+          "range": "A389:B389",
+          "name": "藍海帝國企業大樓管理委員會",
+          "address": "桃園區文中路491號(管理中心)"
+        }
+      ]
+    },
+    {
+      "id": "building_0d7705647b44",
+      "name": "民生商業大樓",
+      "aliases": [],
+      "county_id": "taoyuan",
+      "district": "桃園區",
+      "addresses": [
+        "桃園市桃園區民生路60號"
+      ],
+      "checked_at": "2026-11-13",
+      "references": [
+        {
+          "source_id": "tycg_registry_20261031",
+          "sheet": "桃園區",
+          "range": "A416:B416",
+          "name": "民生商業大樓",
+          "address": "桃園區民生路60號7樓之5"
+        }
+      ]
+    },
+    {
+      "id": "building_264615e3d28d",
+      "name": "昭揚銳",
+      "aliases": [],
+      "county_id": "taoyuan",
+      "district": "桃園區",
+      "addresses": [
+        "桃園市桃園區同德六街89號"
+      ],
+      "checked_at": "2026-11-13",
+      "references": [
+        {
+          "source_id": "tycg_registry_20261031",
+          "sheet": "桃園區",
+          "range": "A544:B544",
+          "name": "昭揚銳社區管理委員會",
+          "address": "桃園區同安里9鄰同德六街89號"
+        }
+      ]
+    },
+    {
+      "id": "building_5081d4365139",
+      "name": "昭揚乾坤商辦區",
+      "aliases": [],
+      "county_id": "taoyuan",
+      "district": "桃園區",
+      "addresses": [
+        "桃園市桃園區藝文一街86號",
+        "桃園市桃園區藝文一街88號"
+      ],
+      "checked_at": "2026-11-13",
+      "references": [
+        {
+          "source_id": "tycg_registry_20261031",
+          "sheet": "桃園區",
+          "range": "A607:B607",
+          "name": "昭揚乾坤社區商辦區管理委員會",
+          "address": "桃園區藝文一街86號管理中心 (藝文一街88號9樓)"
+        }
+      ]
+    },
+    {
+      "id": "building_7b565409c47e",
+      "name": "華信金融大樓",
+      "aliases": [],
+      "county_id": "taoyuan",
+      "district": "桃園區",
+      "addresses": [
+        "桃園市桃園區復興路51號"
+      ],
+      "checked_at": "2026-11-13",
+      "references": [
+        {
+          "source_id": "tycg_registry_20261031",
+          "sheet": "桃園區",
+          "range": "A614:B614",
+          "name": "華信金融大樓",
+          "address": "桃園區復興路51號"
+        }
+      ]
+    },
+    {
+      "id": "building_4b40792bab62",
+      "name": "海王經貿廣場",
+      "aliases": [],
+      "county_id": "taoyuan",
+      "district": "桃園區",
+      "addresses": [
+        "桃園市桃園區春日路1492號"
+      ],
+      "checked_at": "2026-11-13",
+      "references": [
+        {
+          "source_id": "tycg_registry_20261031",
+          "sheet": "桃園區",
+          "range": "A816:B816",
+          "name": "海王經貿廣場管理委員會",
+          "address": "桃園區春日路1492號等"
+        }
+      ]
+    },
+    {
+      "id": "building_6e720498ebdf",
+      "name": "環宇經貿辦公大樓",
+      "aliases": [],
+      "county_id": "taoyuan",
+      "district": "桃園區",
+      "addresses": [
+        "桃園市桃園區春日路985號"
+      ],
+      "checked_at": "2026-11-13",
+      "references": [
+        {
+          "source_id": "tycg_registry_20261031",
+          "sheet": "桃園區",
+          "range": "A829:B829",
+          "name": "環宇經貿辦公大樓管理委員會",
+          "address": "桃園區春日路985號"
+        }
+      ]
+    },
+    {
+      "id": "building_a410a1805546",
+      "name": "環球財經廣場",
+      "aliases": [],
+      "county_id": "taoyuan",
+      "district": "桃園區",
+      "addresses": [
+        "桃園市桃園區復興路110號"
+      ],
+      "checked_at": "2026-11-13",
+      "references": [
+        {
+          "source_id": "tycg_registry_20261031",
+          "sheet": "桃園區",
+          "range": "A1009:B1009",
+          "name": "環球財經廣場管理委員會",
+          "address": "桃園區復興路110號等"
+        }
+      ]
+    },
+    {
+      "id": "building_5a9c0e1242c7",
+      "name": "三普寶麗金大廈(商辦區)",
+      "aliases": [],
+      "county_id": "taoyuan",
+      "district": "桃園區",
+      "addresses": [
+        "桃園市桃園區復興路99號"
+      ],
+      "checked_at": "2026-11-13",
+      "references": [
+        {
+          "source_id": "tycg_registry_20261031",
+          "sheet": "桃園區",
+          "range": "A1026:B1026",
+          "name": "三普寶麗金大廈(商辦區)",
+          "address": "桃園區復興路99號"
+        }
+      ]
+    },
+    {
+      "id": "building_894aef1b6c4f",
+      "name": "RICH58",
+      "aliases": [],
+      "county_id": "taoyuan",
+      "district": "桃園區",
+      "addresses": [
+        "桃園市桃園區新埔六街77號"
+      ],
+      "checked_at": "2026-11-13",
+      "references": [
+        {
+          "source_id": "tycg_registry_20261031",
+          "sheet": "桃園區",
+          "range": "A1113:B1113",
+          "name": "RICH58社區管理委員會",
+          "address": "桃園區同安里新埔六街77號"
+        }
+      ]
+    },
+    {
+      "id": "building_880e5aebafb9",
+      "name": "中悅環球企業總部",
+      "aliases": [],
+      "county_id": "taoyuan",
+      "district": "桃園區",
+      "addresses": [
+        "桃園市桃園區新埔六街97號",
+        "桃園市桃園區新埔六街101號"
+      ],
+      "checked_at": "2026-11-13",
+      "references": [
+        {
+          "source_id": "tycg_registry_20261031",
+          "sheet": "桃園區",
+          "range": "A1114:B1114",
+          "name": "中悅環球企業總部管理委員會",
+          "address": "桃園區新埔六街97號14樓"
+        },
+        {
+          "source_id": "chungyuet_101",
+          "name": "中悅環球企業總部",
+          "address": "桃園市桃園區新埔六街101號"
+        }
+      ]
+    },
+    {
+      "id": "building_4274c6744536",
+      "name": "企業財星大樓",
+      "aliases": [],
+      "county_id": "taoyuan",
+      "district": "桃園區",
+      "addresses": [
+        "桃園市桃園區經國路618號"
+      ],
+      "checked_at": "2026-11-13",
+      "references": [
+        {
+          "source_id": "tycg_registry_20261031",
+          "sheet": "桃園區",
+          "range": "A1142:B1142",
+          "name": "企業財星大樓社區管理委員會",
+          "address": "桃園區經國路618號9樓之2"
+        }
+      ]
+    },
+    {
+      "id": "building_cebbc50f9471",
+      "name": "商貿中心",
+      "aliases": [],
+      "county_id": "taoyuan",
+      "district": "桃園區",
+      "addresses": [
+        "桃園市桃園區幸福路200號"
+      ],
+      "checked_at": "2026-11-13",
+      "references": [
+        {
+          "source_id": "tycg_registry_20261031",
+          "sheet": "桃園區",
+          "range": "A1498:B1498",
+          "name": "商貿中心社區管理委員會",
+          "address": "桃園區幸福路200號"
+        }
+      ]
+    },
+    {
+      "id": "building_995a7675b81a",
+      "name": "來亨旺辦公大樓",
+      "aliases": [],
+      "county_id": "taoyuan",
+      "district": "桃園區",
+      "addresses": [
+        "桃園市桃園區大有路487號"
+      ],
+      "checked_at": "2026-11-13",
+      "references": [
+        {
+          "source_id": "tycg_registry_20261031",
+          "sheet": "桃園區",
+          "range": "A1529:B1529",
+          "name": "來亨旺辦公大樓管理負責人",
+          "address": "桃園區大有路487號"
+        }
+      ]
+    },
+    {
+      "id": "building_021422a113ff",
+      "name": "新光桃園國際金融大樓",
+      "aliases": [],
+      "county_id": "taoyuan",
+      "district": "桃園區",
+      "addresses": [
+        "桃園市桃園區復興路207號"
+      ],
+      "checked_at": "2026-11-13",
+      "references": [
+        {
+          "source_id": "tycg_registry_20261031",
+          "sheet": "桃園區",
+          "range": "A1655:B1655",
+          "name": "新光桃園國際金融大樓管理委員會",
+          "address": "桃園區復興路207號"
+        }
+      ]
+    },
+    {
+      "id": "building_ca0f8dba6cb3",
+      "name": "中央企業大樓",
+      "aliases": [],
+      "county_id": "taoyuan",
+      "district": "中壢區",
+      "addresses": [
+        "桃園市中壢區三光路86號"
+      ],
+      "checked_at": "2026-11-13",
+      "references": [
+        {
+          "source_id": "tycg_registry_20261031",
+          "sheet": "中壢區",
+          "range": "A19:B19",
+          "name": "中央企業大樓",
+          "address": "中壢區三光路86號1樓"
+        }
+      ]
+    },
+    {
+      "id": "building_6bb0f48f6ed6",
+      "name": "世貿財星廣場",
+      "aliases": [],
+      "county_id": "taoyuan",
+      "district": "中壢區",
+      "addresses": [
+        "桃園市中壢區中央西路1段120號"
+      ],
+      "checked_at": "2026-11-13",
+      "references": [
+        {
+          "source_id": "tycg_registry_20261031",
+          "sheet": "中壢區",
+          "range": "A76:B76",
+          "name": "世貿財星廣場管理委員會",
+          "address": "中壢區中央西路一段120號等"
+        }
+      ]
+    },
+    {
+      "id": "building_717a0f7ce013",
+      "name": "金緯商業大樓",
+      "aliases": [],
+      "county_id": "taoyuan",
+      "district": "中壢區",
+      "addresses": [
+        "桃園市中壢區中央西路1段1號"
+      ],
+      "checked_at": "2026-11-13",
+      "references": [
+        {
+          "source_id": "tycg_registry_20261031",
+          "sheet": "中壢區",
+          "range": "A77:B77",
+          "name": "金緯商業大樓",
+          "address": "中壢區中央西路一段1號"
+        }
+      ]
+    },
+    {
+      "id": "building_ce7885f2609b",
+      "name": "世貿銀座公寓大廈",
+      "aliases": [],
+      "county_id": "taoyuan",
+      "district": "中壢區",
+      "addresses": [
+        "桃園市中壢區中央西路2段30號"
+      ],
+      "checked_at": "2026-11-13",
+      "references": [
+        {
+          "source_id": "tycg_registry_20261031",
+          "sheet": "中壢區",
+          "range": "A81:B81",
+          "name": "世貿銀座公寓大廈",
+          "address": "中壢區中央西路二段30號10樓A室"
+        }
+      ]
+    },
+    {
+      "id": "building_19c46ad13574",
+      "name": "冠昱銀座廿一商業大樓",
+      "aliases": [],
+      "county_id": "taoyuan",
+      "district": "中壢區",
+      "addresses": [
+        "桃園市中壢區中央東路88號"
+      ],
+      "checked_at": "2026-11-13",
+      "references": [
+        {
+          "source_id": "tycg_registry_20261031",
+          "sheet": "中壢區",
+          "range": "A85:B85",
+          "name": "冠昱銀座廿一商業大樓",
+          "address": "中壢區中央東路88號11樓"
+        }
+      ]
+    },
+    {
+      "id": "building_10a1b7e6b6ea",
+      "name": "陽明商業大樓",
+      "aliases": [],
+      "county_id": "taoyuan",
+      "district": "中壢區",
+      "addresses": [
+        "桃園市中壢區中美路2段117號"
+      ],
+      "checked_at": "2026-11-13",
+      "references": [
+        {
+          "source_id": "tycg_registry_20261031",
+          "sheet": "中壢區",
+          "range": "A108:B108",
+          "name": "陽明商業大樓",
+          "address": "中壢區中美路2段117號1樓"
+        }
+      ]
+    },
+    {
+      "id": "building_2d93bff2fd60",
+      "name": "國際財星大樓",
+      "aliases": [],
+      "county_id": "taoyuan",
+      "district": "中壢區",
+      "addresses": [
+        "桃園市中壢區元化路226號"
+      ],
+      "checked_at": "2026-11-13",
+      "references": [
+        {
+          "source_id": "tycg_registry_20261031",
+          "sheet": "中壢區",
+          "range": "A177:B177",
+          "name": "國際財星大樓",
+          "address": "中壢區元化路226號"
+        }
+      ]
+    },
+    {
+      "id": "building_d9163df5bd52",
+      "name": "中壢中國信託大樓",
+      "aliases": [],
+      "county_id": "taoyuan",
+      "district": "中壢區",
+      "addresses": [
+        "桃園市中壢區延平路500號"
+      ],
+      "checked_at": "2026-11-13",
+      "references": [
+        {
+          "source_id": "tycg_registry_20261031",
+          "sheet": "中壢區",
+          "range": "A394:B394",
+          "name": "中壢中國信託大樓管理委員會",
+          "address": "中壢區延平路500號8樓-7"
+        }
+      ]
+    },
+    {
+      "id": "building_69393db4a5f2",
+      "name": "凱撒雙星",
+      "aliases": [],
+      "county_id": "taoyuan",
+      "district": "中壢區",
+      "addresses": [
+        "桃園市中壢區環北路400號"
+      ],
+      "checked_at": "2026-11-13",
+      "references": [
+        {
+          "source_id": "tycg_registry_20261031",
+          "sheet": "中壢區",
+          "range": "A961:B961",
+          "name": "凱撒雙星管理委員會",
+          "address": "中壢區環北路400號B1(管理中心)"
+        }
+      ]
+    },
+    {
+      "id": "building_03ae6331e7a1",
+      "name": "國際金融雙星",
+      "aliases": [],
+      "county_id": "taoyuan",
+      "district": "中壢區",
+      "addresses": [
+        "桃園市中壢區高鐵站前西路1段268號"
+      ],
+      "checked_at": "2026-11-13",
+      "references": [
+        {
+          "source_id": "tycg_registry_20261031",
+          "sheet": "中壢區",
+          "range": "A1038:B1038",
+          "name": "國際金融雙星管理委員會",
+          "address": "中壢區高鐵站前西路一段268號"
+        }
+      ]
+    },
+    {
+      "id": "building_3c4adac0611a",
+      "name": "國泰青埔資訊大樓",
+      "aliases": [],
+      "county_id": "taoyuan",
+      "district": "中壢區",
+      "addresses": [
+        "桃園市中壢區青埔路2段111號"
+      ],
+      "checked_at": "2026-11-13",
+      "references": [
+        {
+          "source_id": "tycg_registry_20261031",
+          "sheet": "中壢區",
+          "range": "A1180:B1180",
+          "name": "國泰青埔資訊大樓管理負責人",
+          "address": "中壢區青埔路二段111號"
+        }
+      ]
+    },
+    {
+      "id": "building_c2f7e221b2af",
+      "name": "兆豐商業大樓",
+      "aliases": [],
+      "county_id": "taoyuan",
+      "district": "中壢區",
+      "addresses": [
+        "桃園市中壢區新明路7號"
+      ],
+      "checked_at": "2026-11-13",
+      "references": [
+        {
+          "source_id": "tycg_registry_20261031",
+          "sheet": "中壢區",
+          "range": "A1383:B1383",
+          "name": "兆豐商業大樓管理委員會",
+          "address": "中壢區新明路7號12樓"
+        }
+      ]
+    },
+    {
+      "id": "building_4d917b3236d1",
+      "name": "世貿國際大廈",
+      "aliases": [],
+      "county_id": "taoyuan",
+      "district": "龜山區",
+      "addresses": [
+        "桃園市龜山區公園路32號"
+      ],
+      "checked_at": "2026-11-13",
+      "references": [
+        {
+          "source_id": "tycg_registry_20261031",
+          "sheet": "龜山區",
+          "range": "A130:B130",
+          "name": "世貿國際大廈",
+          "address": "龜山區公園路32號10樓"
+        }
+      ]
+    },
+    {
+      "id": "building_4e4182a0d332",
+      "name": "龍田金融大廈",
+      "aliases": [],
+      "county_id": "taoyuan",
+      "district": "龜山區",
+      "addresses": [
+        "桃園市龜山區萬壽路1段161號"
+      ],
+      "checked_at": "2026-11-13",
+      "references": [
+        {
+          "source_id": "tycg_registry_20261031",
+          "sheet": "龜山區",
+          "range": "A486:B486",
+          "name": "龍田金融大廈",
+          "address": "龜山區萬壽路一段161號1樓"
+        }
+      ]
+    },
+    {
+      "id": "building_d23d71071aab",
+      "name": "大企業家大廈",
+      "aliases": [],
+      "county_id": "taoyuan",
+      "district": "蘆竹區",
+      "addresses": [
+        "桃園市蘆竹區南崁路1段99號"
+      ],
+      "checked_at": "2026-11-13",
+      "references": [
+        {
+          "source_id": "tycg_registry_20261031",
+          "sheet": "蘆竹區",
+          "range": "A347:B347",
+          "name": "大企業家大廈",
+          "address": "蘆竹區南崁路一段99號等"
+        }
+      ]
+    },
+    {
+      "id": "building_56ae6b3585f9",
+      "name": "來鑫商業大樓",
+      "aliases": [],
+      "county_id": "taoyuan",
+      "district": "八德區",
+      "addresses": [
+        "桃園市八德區介壽路1段919號"
+      ],
+      "checked_at": "2026-11-13",
+      "references": [
+        {
+          "source_id": "tycg_registry_20261031",
+          "sheet": "八德區",
+          "range": "A111:B111",
+          "name": "來鑫商業大樓",
+          "address": "八德區介壽路一段919號12樓之3"
+        }
+      ]
+    }
+  ]
+}

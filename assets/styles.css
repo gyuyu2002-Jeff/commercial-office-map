@@ -210,6 +210,13 @@ button.list-pagination { width: 100%; min-width: 160px; padding: 8px 16px; borde
 .building-directory-entry:hover { background: #EFF8FF; border-color: var(--blue); }
 .building-directory-entry > span { font-size: 13px; color: var(--text-muted); }
 .directory-search { width: 100%; min-height: 44px; padding: 10px 12px; font-size: 16px; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 12px; }
+.directory-modes { display: flex; flex-wrap: wrap; gap: 8px; }
+.directory-rows { display: flex; flex-direction: column; gap: 8px; }
+.building-context { display: flex; flex-direction: column; gap: 8px; padding: 14px; margin-bottom: 12px; border: 1px solid #7DD3FC; border-radius: 8px; background: #F0F9FF; overflow-wrap: anywhere; }
+.building-context h3 { font-size: 16px; }
+.building-context > p { font-size: 13px; }
+.building-sources summary { min-height: 44px; display: flex; align-items: center; color: var(--blue); }
+.building-sources a { display: block; padding: 6px 0; font-size: 13px; }
 .county-modal-tip { margin-bottom: 16px; padding: 12px 14px; border: 1px solid #BAE6FD; border-radius: 7px; background: #F0F9FF; color: #075985; font-size: 14px; }
 .county-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-bottom: 16px; }
 .county-region-tabs { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 6px; }

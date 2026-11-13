@@ -9,12 +9,13 @@
   let filters = initialFilters(), statuses = Object.create(null), storageProblem = false, unreadableStorage = false;
   let queryId = 0, complete = false, loading = false, failed = false, loadingPage = false, exporting = false, pendingExport = false;
   let rows = [], resultCount = 0, scanned = 0, districtCounts = {}, statusCounts = {}, addressCount = 0;
-  let searchTimer, composing = false, selectedId = null, directoryRequestId = 0, directoryOffset = 0, directoryTimer;
+  let searchTimer, composing = false, selectedId = null, directoryRequestId = 0, directoryOffset = 0, directoryTimer, directoryMode = 'names';
   let map, markersLayer, locationMarker, baseLayers = {}, baseLayerName = 'osm', autoLabels = true;
   let activeModal = null, modalTrigger = null;
   const backgroundInert = new Map();
 
-  function initialFilters() { return { district: 'all', category: 'ALL', capital: Core.DEFAULT_CAPITAL, address: '', market: 'ALL', status: 'ALL', query: '' }; }
+  function initialFilters() { return { district: 'all', category: 'ALL', capital: Core.DEFAULT_CAPITAL, address: '', buildingId: '', market: 'ALL', status: 'ALL', query: '' }; }
+  function selectedBuilding() { return catalog?.named_buildings?.find(building => building.id === filters.buildingId); }
   function element(tag, className, text) {
     const node = document.createElement(tag);
     if (className) node.className = className;
@@ -133,18 +134,19 @@
 
   function switchCounty(id) {
     if (!Object.hasOwn(counties, id)) return;
-    currentCounty = id; filters.district = 'all'; filters.address = ''; selectedId = null;
+    currentCounty = id; filters.district = 'all'; filters.address = ''; filters.buildingId = ''; selectedId = null;
     setText('currentCountyDisplay', counties[id].name); setText('headerCountyBadge', counties[id].name);
     runQuery();
     if (map && counties[id].center) map.setView(counties[id].center, counties[id].zoom || 11);
   }
   function chooseFilter(key, value) {
+    if (key === 'address') filters.buildingId = '';
     filters[key] = value; selectedId = null; runQuery();
     const container = { address: 'buildingChips', district: 'districtNavBar' }[key];
     if (container) Array.from($(container).querySelectorAll('button')).find(node => node.dataset.value === value)?.focus({ preventScroll: true });
   }
   function switchDistrict(id) {
-    filters.district = id; filters.address = ''; selectedId = null; runQuery();
+    filters.district = id; filters.address = ''; filters.buildingId = ''; selectedId = null; runQuery();
     const district = (counties[currentCounty].districts || []).find(d => d.id === id);
     if (map && district?.center) map.setView(district.center, 12);
   }
@@ -192,6 +194,7 @@
       filters.category !== 'ALL' && ['category', $('industrySelect').selectedOptions[0]?.textContent || '產業', 'ALL'],
       filters.capital !== 'ALL' && ['capital', `資本額 ${$('capitalCurrentLabel').textContent}`, 'ALL'],
       filters.address && ['address', filters.address, ''],
+      filters.buildingId && ['buildingId', selectedBuilding()?.name || '已選大樓', ''],
       filters.market !== 'ALL' && ['market', filters.market === 'LISTED' ? '只看上市櫃' : `只看${filters.market}`, 'ALL'],
       filters.status !== 'ALL' && ['status', filters.status, 'ALL']
     ].filter(Boolean);
@@ -228,10 +231,11 @@
     (county.districts || []).forEach(d => $('districtNavBar').append(chip(`${d.name} (${d.company_count.toLocaleString()})`, d.id,
       filters.district === d.id, 'district-btn', () => switchDistrict(d.id))));
     renderIndustries();
-    $('buildingChips').replaceChildren(chip('全部商辦大樓', '', !filters.address, 'chip', () => chooseFilter('address', '')));
+    $('buildingChips').replaceChildren(chip('全部商辦大樓', '', !filters.address && !filters.buildingId, 'chip', () => chooseFilter('address', '')));
     if (filters.address) $('buildingChips').append(chip(filters.address, filters.address, true, 'chip', () => chooseFilter('address', '')));
-    $('buildingChips').append(button(complete ? `查看 ${addressCount.toLocaleString()} 棟商辦大樓` : '搜尋完成後查看商辦大樓', 'chip', openAllBuildingsDirectory));
-    setText('buildingCurrentLabel', filters.address || '全部商辦大樓');
+    $('buildingChips').append(button('用名稱找大樓', 'chip', openAllBuildingsDirectory));
+    $('buildingChips').append(button(complete ? `目前結果的 ${addressCount.toLocaleString()} 個門牌` : '搜尋完成後查看門牌', 'chip', openAddressDirectory));
+    setText('buildingCurrentLabel', selectedBuilding()?.name || filters.address || '全部商辦大樓');
     document.querySelectorAll('#capitalChips [data-tier]').forEach(node => {
       const selected = node.dataset.tier === filters.capital;
       node.classList.toggle('active', selected); node.setAttribute('aria-pressed', String(selected));
@@ -318,6 +322,7 @@
     const list = $('clientList'), scroller = window.innerWidth <= 768 ? document.querySelector('.sidebar') : list;
     const scrollTop = scroller?.scrollTop || 0;
     list.replaceChildren();
+    renderBuildingContext(list);
     if (!rows.length) list.append(loading || failed ? element('p', 'empty-state', loading ? '正在搜尋所選縣市，請稍候…'
       : '資料尚未完整載入，請使用上方提示重試。') : emptyResults());
     const fragment = document.createDocumentFragment(); rows.forEach(row => fragment.append(companyCard(row))); list.append(fragment);
@@ -474,22 +479,91 @@
     switchCounty(selectedCounty);
   }
 
-  function openAllBuildingsDirectory() {
+  function namedBuildingEntry(building) {
+    const node = button('', 'building-directory-entry', () => selectNamedBuilding(building));
+    node.append(element('strong', '', building.name), element('span', '', building.addresses.join('、')),
+      element('span', '', building.company_count ? `本期收錄 ${building.company_count.toLocaleString()} 家 · 未套用企業條件` : '本期企業名單未收錄此門牌，不代表沒有企業'));
+    return node;
+  }
+  function selectNamedBuilding(building) {
+    const capital = filters.capital;
+    closeModal('modalBuilding'); resetFilters(); filters.capital = capital;
+    currentCounty = building.county_id; filters.buildingId = building.id;
+    setText('currentCountyDisplay', counties[currentCounty].name); setText('headerCountyBadge', counties[currentCounty].name);
+    runQuery(); setMobileView('list');
+    if (map && counties[currentCounty].center) map.setView(counties[currentCounty].center, counties[currentCounty].zoom || 11);
+    $('clientList').scrollTop = 0;
+    $('searchInput').focus({ preventScroll: true });
+  }
+  function renderBuildingContext(list) {
+    const building = selectedBuilding();
+    if (building) {
+      const section = element('section', 'building-context'); section.id = 'selectedBuilding';
+      section.append(element('h3', '', building.name));
+      for (const address of building.addresses) section.append(element('p', '', `${address} · 本期收錄 ${building.address_counts[address].toLocaleString()} 家`));
+      section.append(element('p', 'search-hint', `核對日期：${building.checked_at}。名單依已核對門牌的稅籍登記彙整，並非實際進駐或既有客戶名單。`));
+      const sources = element('details', 'building-sources'); sources.append(element('summary', '', '大樓名稱與門牌來源'));
+      for (const id of new Set(building.references.map(ref => ref.source_id))) {
+        const source = catalog.building_name_sources[id], url = Core.safeURL(source.url);
+        if (url) sources.append(link(source.title, url, ''));
+      }
+      section.append(sources, button('查看本棟全部收錄企業', 'card-btn', () => {
+        resetFilters(); filters.capital = 'ALL'; filters.buildingId = building.id; runQuery();
+      }));
+      list.append(section);
+    } else if (filters.query) {
+      const matches = Core.findNamedBuildings(catalog.named_buildings, filters.query);
+      if (!matches.length) return;
+      const section = element('section', 'building-context'); section.id = 'buildingCandidates';
+      section.append(element('h3', '', '符合名稱或門牌的大樓'), element('p', 'search-hint', '選定門牌後查看企業；保留資本額，清除其他企業條件。'));
+      matches.slice(0, 3).forEach(item => section.append(namedBuildingEntry(item)));
+      if (matches.length > 3) section.append(button(`查看全部 ${matches.length} 棟`, 'text-button', () => openAllBuildingsDirectory(filters.query)));
+      list.append(section);
+    }
+  }
+  function directoryModes() {
+    const nav = element('div', 'directory-modes'); nav.setAttribute('aria-label', '大樓查找方式');
+    nav.append(chip('大樓名稱 · 桃園優先', 'names', directoryMode === 'names', 'chip', openAllBuildingsDirectory));
+    const addresses = chip('目前結果的門牌', 'addresses', directoryMode === 'addresses', 'chip', openAddressDirectory);
+    addresses.disabled = !complete; nav.append(addresses); return nav;
+  }
+  function renderNamedDirectory() {
+    const list = $('directoryRows'); if (directoryMode !== 'names' || !list) return;
+    const matches = Core.findNamedBuildings(catalog.named_buildings, $('directorySearch').value);
+    list.replaceChildren(element('p', 'search-hint', `找到 ${matches.length} 棟 · 名稱清冊不套用企業篩選條件`));
+    matches.forEach(building => list.append(namedBuildingEntry(building)));
+    if (!matches.length) list.append(element('p', 'empty-state', '這個名稱尚未收錄。可改用街道門牌查詢；零筆不代表大樓或企業不存在。'));
+  }
+  function openAllBuildingsDirectory(query = '') {
+    if (!catalog) return;
+    directoryMode = 'names'; clearTimeout(directoryTimer);
+    setText('bldModalTitle', '找大樓 · 桃園優先');
+    setText('bldModalSubtitle', `已核對 ${catalog.named_buildings?.length || 0} 棟名稱，更新 ${catalog.building_names_updated_at || '未提供'}。選大樓會切換地區、保留資本額並清除其他企業條件；僅比對列出的門牌。`);
+    const search = element('input', 'directory-search'); search.type = 'search'; search.id = 'directorySearch';
+    search.placeholder = '輸入招牌名稱，例如：世貿帝國'; search.setAttribute('aria-label', '搜尋大樓名稱、別名或地址');
+    search.value = typeof query === 'string' ? query : '';
+    search.addEventListener('input', renderNamedDirectory);
+    const directoryRows = element('div', 'directory-rows'); directoryRows.id = 'directoryRows';
+    $('bldModalList').replaceChildren(directoryModes(), search, directoryRows);
+    renderNamedDirectory(); openModal('modalBuilding'); search.focus();
+  }
+  function openAddressDirectory() {
     if (!complete) { notice('請等完整搜尋完成後再開啟商辦大樓名錄。'); return; }
+    directoryMode = 'addresses'; clearTimeout(directoryTimer);
     setText('bldModalTitle', `${counties[currentCounty].name} · 商辦大樓名錄`);
     setText('bldModalSubtitle', `目前條件符合 ${addressCount.toLocaleString()} 棟大樓地址；點選後查看該棟符合相同條件的登記企業。`);
     const list = $('bldModalList'), search = element('input', 'directory-search');
     search.type = 'search'; search.id = 'directorySearch'; search.placeholder = '搜尋商辦大樓地址'; search.setAttribute('aria-label', '搜尋目前名錄中的商辦大樓地址');
     search.addEventListener('input', () => { clearTimeout(directoryTimer); directoryTimer = setTimeout(() => requestDirectory(0), 150); });
     const directoryRows = element('div', 'directory-rows'); directoryRows.id = 'directoryRows';
-    list.replaceChildren(search, directoryRows); openModal('modalBuilding'); requestDirectory(0);
+    list.replaceChildren(directoryModes(), search, directoryRows); openModal('modalBuilding'); requestDirectory(0);
   }
   function requestDirectory(offset) {
     directoryRequestId++; directoryOffset = offset;
     worker.postMessage({ type: 'directory', id: queryId, requestId: directoryRequestId, offset, query: $('directorySearch')?.value || '' });
   }
   function renderDirectoryPage(message) {
-    const list = $('directoryRows'); if (!list || activeModal?.id !== 'modalBuilding') return;
+    const list = $('directoryRows'); if (!list || activeModal?.id !== 'modalBuilding' || directoryMode !== 'addresses') return;
     if (!message.offset) list.replaceChildren();
     list.querySelector('.list-pagination')?.remove();
     if (!message.total) list.append(element('p', 'empty-state', '沒有符合的商辦大樓。'));
