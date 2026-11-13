@@ -7,7 +7,7 @@ const Core = require('../assets/core.js');
 const root = path.join(__dirname, '..');
 const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
 
-async function app(t) {
+async function app(t, addressOnly = false) {
   // Isolated DOM and worker responses; no network, real browser storage, or published data is changed.
   const dom = new JSDOM(fs.readFileSync(path.join(root, 'src/index.html'), 'utf8'), {
     url: 'https://example.invalid/', runScripts: 'dangerously', pretendToBeVisual: true
@@ -26,6 +26,8 @@ async function app(t) {
     industry_sections: { '45': '批發業', '46': '批發業', '47': '零售業', '48': '零售業', '62': '電腦程式設計', '63': '資訊服務' },
     enrichment: { '23492169': { market: '上市', stock_code: '5292', phone: '(03)4272889', chairperson: '鄭石治' } } };
   let onMessage;
+  if (addressOnly) catalog.named_buildings.push({ ...catalog.named_buildings[0], id: 'door_only', name: '測試路1號', aliases: [],
+    name_status: 'address_only', note: '僅核對公開登記地址，名稱待查。' });
   window.fetch = async () => ({ ok: true, json: async () => window.JSON.parse(JSON.stringify(catalog)) });
   window.Worker = class {
     addEventListener(type, fn) { if (type === 'message') onMessage = fn; }
@@ -177,4 +179,15 @@ test('desktop views keep the search and allow a full-width list; national direct
   assert.match(ui.get('directoryRows').textContent, /名稱仍待核對/);
   ui.document.querySelector('#directoryRows button').click();
   assert.equal(ui.last().countyId, 'taipei'); assert.equal(ui.last().filters.query, '');
+});
+
+test('address-only entries are never presented as verified building names', async t => {
+  const ui = await app(t, true); ui.get('btnBuildingMode').click();
+  assert.match(ui.get('bldModalSubtitle').textContent, /2 棟已核對名稱、1 個僅核對門牌/);
+  const option = [...ui.get('directoryCounty').options].find(item => item.value === 'taoyuan');
+  assert.match(option.textContent, /2 棟名稱已核對、1 個門牌已核對，名稱待查/);
+  const entry = [...ui.document.querySelectorAll('#directoryRows .building-directory-entry')].find(node => node.textContent.includes('名稱待查'));
+  entry.click(); assert.equal(ui.last().filters.buildingId, 'door_only');
+  assert.match(ui.get('selectedBuilding').textContent, /僅核對公開登記地址/);
+  assert.equal(ui.document.querySelector('#selectedBuilding summary').textContent, '門牌登記來源');
 });

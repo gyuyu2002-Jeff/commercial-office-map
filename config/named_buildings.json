@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "updated_at": "2026-11-13",
-  "coverage_note": "全台縣市分批核對大樓名稱；目前含桃園及其他七縣市首批名稱。名稱、別名與門牌逐筆附公開來源，僅連結列出的核對門牌；尚未收錄名稱不代表沒有大樓或企業。企業名單仍依本期商辦稅籍篩選，不代表實際進駐查核或建築用途認定。",
+  "coverage_note": "22縣市均有首批核對門牌入口，21縣市已查得大樓名稱；連江縣目前僅核對登記門牌，名稱待查。各地僅列首批資料，不代表完整大樓或租戶名錄。門牌可能位於住商混合大樓或住宅社區，不據此認定商辦用途或實際進駐。",
   "sources": {
     "tycg_registry_20261031": {
       "title": "桃園市建築管理處：本市報備在案公寓大廈管理組織清冊",
@@ -79,6 +79,77 @@
     "kaohsiung_85_door3": {
       "title": "591：高雄85大樓基地門牌",
       "url": "https://market.591.com.tw/24126/overview",
+      "checked_at": "2026-11-13"
+    },
+    "building_dd84a6ffc185_source": {
+      "title": "6+PLAZA營運官網：商辦大樓",
+      "url": "https://www.weixia.com.tw/article.php?lang=tw&tb=3",
+      "checked_at": "2026-11-13"
+    },
+    "building_49d25b466f71_source": {
+      "title": "彰化縣政府管理委員會名冊：編號281",
+      "url": "https://files.chcg.gov.tw/files/16_20250108142026308_%E5%BD%B0%E5%8C%96%E7%B8%A3%E5%85%AC%E5%AF%93%E5%A4%A7%E5%BB%88%E7%AE%A1%E7%90%86%E5%A7%94%E5%93%A1%E6%9C%83%E5%90%8D%E5%86%8A113%E5%B9%B4_2025.pdf",
+      "checked_at": "2026-11-13"
+    },
+    "building_7fc0383fce13_source": {
+      "title": "591：豪旺天廈辦公室門牌",
+      "url": "https://business.591.com.tw/rent/21888231",
+      "checked_at": "2026-11-13"
+    },
+    "building_961da872e55f_source": {
+      "title": "南投縣政府公寓大廈清冊：編號208",
+      "url": "https://www.nantou.gov.tw/getfile.php?path=upload%2FItEEWPIDM0eUeAvD.pdf",
+      "checked_at": "2026-11-13"
+    },
+    "building_41d9bafb9f5c_source": {
+      "title": "永慶房仲網：緯固茂園通商大樓",
+      "url": "https://community.yungching.com.tw/building/96496",
+      "checked_at": "2026-11-13"
+    },
+    "building_b517e86ca5c0_source": {
+      "title": "樂居：經濟大國門牌",
+      "url": "https://www.leju.com.tw/community/L36a12488190839",
+      "checked_at": "2026-11-13"
+    },
+    "building_df69ac88e526_source": {
+      "title": "591：遠雄國寶棟別與門牌",
+      "url": "https://market.591.com.tw/5901170/qaDetail?questionId=2",
+      "checked_at": "2026-11-13"
+    },
+    "building_00b2b35f08c8_source": {
+      "title": "永慶房仲網：中山商業大樓",
+      "url": "https://community.yungching.com.tw/building/58887",
+      "checked_at": "2026-11-13"
+    },
+    "building_937b5f408536_source": {
+      "title": "羅東鎮公所防空避難設施清冊：TPA0325",
+      "url": "https://www.lotong.gov.tw/UploadDir/Announcement/114%E7%BE%85%E6%9D%B1%E9%8E%AE%E9%98%B2%E7%A9%BA%E9%81%BF%E9%9B%A3.pdf",
+      "checked_at": "2026-11-13"
+    },
+    "building_7214bd64b986_source": {
+      "title": "591：花蓮第一廣場社區概況",
+      "url": "https://market.591.com.tw/5900848/overview",
+      "checked_at": "2026-11-13"
+    },
+    "building_c0d188449f23_source": {
+      "title": "591：富甲大樓實價登錄門牌",
+      "url": "https://market.591.com.tw/5900838",
+      "checked_at": "2026-11-13"
+    },
+    "building_edb590c5cead_source": {
+      "title": "澎湖縣政府公寓大廈管理委員會名單：第2頁第1列",
+      "url": "https://www.penghu.gov.tw/uploaddowndoc?file=unit01%2F202507040848210.pdf&filedisplay=%E5%85%AC%E5%AF%93%E5%A4%A7%E5%BB%88%E7%AE%A1%E7%90%86%E5%A7%94%E5%93%A1%E6%9C%83%E5%90%8D%E5%96%AE.pdf&flag=pdf",
+      "checked_at": "2026-11-13",
+      "sha256": "f3bb6763b5a598aa6f8a2c75b701bf0267672dc7168262bb14082bb8806dc9b3"
+    },
+    "building_8408ab964642_source": {
+      "title": "金門縣消防局場所清冊：金信大樓門牌（歷史資料）",
+      "url": "https://ws.kinmen.gov.tw/Download.ashx?n=MTA4MDEwMnBsYWNlMDEucGRm&u=LzAwMS9VcGxvYWQvMzE1L3JlbGZpbGUvMTE5NTkvNjUwNDgxLzE1ZGMwYTlhLTgzOTYtNGU2Yi1hZjhiLTU1ZjU2ZWVlZjcyMy5wZGY%3D",
+      "checked_at": "2026-11-13"
+    },
+    "building_368a855208ae_source": {
+      "title": "經濟部114年10月商業變更登記清冊：方舟實業行地址",
+      "url": "https://serv.gcis.nat.gov.tw/moeadsBF/cmpy/reportAction.do?fileName=371030000Achange11410.pdf&method=report&reportClass=bms&subPath=11410",
       "checked_at": "2026-11-13"
     }
   },
@@ -1131,6 +1202,284 @@
           "address": "高雄市苓雅區自強三路3號"
         }
       ]
+    },
+    {
+      "id": "building_dd84a6ffc185",
+      "name": "暐順經貿大樓",
+      "name_status": "verified",
+      "aliases": [],
+      "county_id": "hsinchu_county",
+      "district": "竹北市",
+      "addresses": [
+        "新竹縣竹北市復興三路2段168號"
+      ],
+      "checked_at": "2026-11-13",
+      "references": [
+        {
+          "source_id": "building_dd84a6ffc185_source",
+          "name": "暐順經貿大樓",
+          "address": "新竹縣竹北市復興三路2段168號"
+        }
+      ]
+    },
+    {
+      "id": "building_49d25b466f71",
+      "name": "金馬商務天廈",
+      "name_status": "verified",
+      "aliases": [],
+      "county_id": "changhua",
+      "district": "彰化市",
+      "addresses": [
+        "彰化縣彰化市金馬路3段439號"
+      ],
+      "checked_at": "2026-11-13",
+      "references": [
+        {
+          "source_id": "building_49d25b466f71_source",
+          "name": "金馬商務天廈",
+          "address": "彰化縣彰化市金馬路3段439號"
+        }
+      ]
+    },
+    {
+      "id": "building_7fc0383fce13",
+      "name": "豪旺天廈",
+      "name_status": "verified",
+      "aliases": [],
+      "county_id": "miaoli",
+      "district": "頭份市",
+      "addresses": [
+        "苗栗縣頭份市中華路951號"
+      ],
+      "checked_at": "2026-11-13",
+      "references": [
+        {
+          "source_id": "building_7fc0383fce13_source",
+          "name": "豪旺天廈",
+          "address": "苗栗縣頭份市中華路951號"
+        }
+      ]
+    },
+    {
+      "id": "building_961da872e55f",
+      "name": "上毅天廈",
+      "name_status": "verified",
+      "aliases": [],
+      "county_id": "nantou",
+      "district": "草屯鎮",
+      "addresses": [
+        "南投縣草屯鎮太平路1段307號"
+      ],
+      "checked_at": "2026-11-13",
+      "references": [
+        {
+          "source_id": "building_961da872e55f_source",
+          "name": "上毅天廈",
+          "address": "南投縣草屯鎮太平路1段307號"
+        }
+      ]
+    },
+    {
+      "id": "building_41d9bafb9f5c",
+      "name": "緯固茂園通商大樓",
+      "name_status": "verified",
+      "aliases": [],
+      "county_id": "yunlin",
+      "district": "斗六市",
+      "addresses": [
+        "雲林縣斗六市雲林路2段203號"
+      ],
+      "checked_at": "2026-11-13",
+      "references": [
+        {
+          "source_id": "building_41d9bafb9f5c_source",
+          "name": "緯固茂園通商大樓",
+          "address": "雲林縣斗六市雲林路2段203號"
+        }
+      ]
+    },
+    {
+      "id": "building_b517e86ca5c0",
+      "name": "經濟大國",
+      "name_status": "verified",
+      "aliases": [],
+      "county_id": "chiayi_city",
+      "district": "西區",
+      "addresses": [
+        "嘉義市西區友愛路288號"
+      ],
+      "checked_at": "2026-11-13",
+      "references": [
+        {
+          "source_id": "building_b517e86ca5c0_source",
+          "name": "經濟大國",
+          "address": "嘉義市西區友愛路288號"
+        }
+      ]
+    },
+    {
+      "id": "building_df69ac88e526",
+      "name": "遠雄國寶",
+      "name_status": "verified",
+      "aliases": [],
+      "county_id": "chiayi_county",
+      "district": "太保市",
+      "addresses": [
+        "嘉義縣太保市保鐵一路2段97號",
+        "嘉義縣太保市保鐵一路2段99號"
+      ],
+      "checked_at": "2026-11-13",
+      "references": [
+        {
+          "source_id": "building_df69ac88e526_source",
+          "name": "遠雄國寶",
+          "address": "嘉義縣太保市保鐵一路2段97號"
+        },
+        {
+          "source_id": "building_df69ac88e526_source",
+          "name": "遠雄國寶",
+          "address": "嘉義縣太保市保鐵一路2段99號"
+        }
+      ],
+      "note": "此為住宅社區的登記企業門牌對照，不能據此認定為商辦用途或實際進駐。"
+    },
+    {
+      "id": "building_00b2b35f08c8",
+      "name": "中山商業大樓",
+      "name_status": "verified",
+      "aliases": [],
+      "county_id": "pingtung",
+      "district": "屏東市",
+      "addresses": [
+        "屏東縣屏東市中山路187號"
+      ],
+      "checked_at": "2026-11-13",
+      "references": [
+        {
+          "source_id": "building_00b2b35f08c8_source",
+          "name": "中山商業大樓",
+          "address": "屏東縣屏東市中山路187號"
+        }
+      ]
+    },
+    {
+      "id": "building_937b5f408536",
+      "name": "金站前商業大樓",
+      "name_status": "verified",
+      "aliases": [],
+      "county_id": "yilan",
+      "district": "羅東鎮",
+      "addresses": [
+        "宜蘭縣羅東鎮公正路155號"
+      ],
+      "checked_at": "2026-11-13",
+      "references": [
+        {
+          "source_id": "building_937b5f408536_source",
+          "name": "金站前商業大樓",
+          "address": "宜蘭縣羅東鎮公正路155號"
+        }
+      ]
+    },
+    {
+      "id": "building_7214bd64b986",
+      "name": "第一廣場",
+      "name_status": "verified",
+      "aliases": [
+        "花蓮第一廣場"
+      ],
+      "county_id": "hualien",
+      "district": "花蓮市",
+      "addresses": [
+        "花蓮縣花蓮市國民七街51號"
+      ],
+      "checked_at": "2026-11-13",
+      "references": [
+        {
+          "source_id": "building_7214bd64b986_source",
+          "name": "第一廣場",
+          "address": "花蓮縣花蓮市國民七街51號"
+        }
+      ]
+    },
+    {
+      "id": "building_c0d188449f23",
+      "name": "富甲大樓",
+      "name_status": "verified",
+      "aliases": [],
+      "county_id": "taitung",
+      "district": "臺東市",
+      "addresses": [
+        "臺東縣臺東市開封街370號"
+      ],
+      "checked_at": "2026-11-13",
+      "references": [
+        {
+          "source_id": "building_c0d188449f23_source",
+          "name": "富甲大樓",
+          "address": "臺東縣臺東市開封街370號"
+        }
+      ]
+    },
+    {
+      "id": "building_edb590c5cead",
+      "name": "馬航世家",
+      "name_status": "verified",
+      "aliases": [
+        "馬航世家公寓大廈"
+      ],
+      "county_id": "penghu",
+      "district": "馬公市",
+      "addresses": [
+        "澎湖縣馬公市三多路411號"
+      ],
+      "checked_at": "2026-11-13",
+      "references": [
+        {
+          "source_id": "building_edb590c5cead_source",
+          "name": "馬航世家",
+          "address": "澎湖縣馬公市三多路411號"
+        }
+      ]
+    },
+    {
+      "id": "building_8408ab964642",
+      "name": "金信大樓",
+      "name_status": "verified",
+      "aliases": [],
+      "county_id": "kinmen",
+      "district": "金城鎮",
+      "addresses": [
+        "金門縣金城鎮民生路25號"
+      ],
+      "checked_at": "2026-11-13",
+      "references": [
+        {
+          "source_id": "building_8408ab964642_source",
+          "name": "金信大樓",
+          "address": "金門縣金城鎮民生路25號"
+        }
+      ]
+    },
+    {
+      "id": "building_368a855208ae",
+      "name": "馬祖村8號",
+      "name_status": "address_only",
+      "aliases": [],
+      "county_id": "lienchiang",
+      "district": "南竿鄉",
+      "addresses": [
+        "連江縣南竿鄉馬祖村8號"
+      ],
+      "checked_at": "2026-11-13",
+      "references": [
+        {
+          "source_id": "building_368a855208ae_source",
+          "name": "",
+          "address": "連江縣南竿鄉馬祖村8號"
+        }
+      ],
+      "note": "僅核對公開登記地址，尚未查得可靠的大樓名稱；以門牌顯示，不推定為商業辦公大樓。"
     }
   ]
 }

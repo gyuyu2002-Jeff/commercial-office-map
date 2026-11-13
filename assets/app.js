@@ -483,6 +483,7 @@
   function namedBuildingEntry(building) {
     const node = button('', 'building-directory-entry', () => selectNamedBuilding(building));
     node.append(element('strong', '', building.name), element('span', '', building.addresses.join('、')),
+      ...(building.name_status === 'address_only' ? [element('span', '', '門牌已核對 · 大樓名稱待查')] : []),
       element('span', '', building.company_count ? `本期收錄 ${building.company_count.toLocaleString()} 家 · 未套用企業條件` : '本期企業名單未收錄此門牌，不代表沒有企業'));
     return node;
   }
@@ -501,9 +502,11 @@
     if (building) {
       const section = element('section', 'building-context'); section.id = 'selectedBuilding';
       section.append(element('h3', '', building.name));
+      if (building.name_status === 'address_only') section.append(element('p', '', '門牌已核對 · 大樓名稱待查'));
+      if (building.note) section.append(element('p', 'search-hint', building.note));
       for (const address of building.addresses) section.append(element('p', '', `${address} · 本期收錄 ${building.address_counts[address].toLocaleString()} 家`));
       section.append(element('p', 'search-hint', `核對日期：${building.checked_at}。名單依已核對門牌的稅籍登記彙整，並非實際進駐或既有客戶名單。`));
-      const sources = element('details', 'building-sources'); sources.append(element('summary', '', '大樓名稱與門牌來源'));
+      const sources = element('details', 'building-sources'); sources.append(element('summary', '', building.name_status === 'address_only' ? '門牌登記來源' : '大樓名稱與門牌來源'));
       for (const id of new Set(building.references.map(ref => ref.source_id))) {
         const source = catalog.building_name_sources[id], url = Core.safeURL(source.url);
         if (url) sources.append(link(source.title, url, ''));
@@ -524,7 +527,7 @@
   }
   function directoryModes() {
     const nav = element('div', 'directory-modes'); nav.setAttribute('aria-label', '大樓查找方式');
-    nav.append(chip('全台大樓名稱', 'names', directoryMode === 'names', 'chip', openAllBuildingsDirectory));
+    nav.append(chip('全台大樓與門牌', 'names', directoryMode === 'names', 'chip', openAllBuildingsDirectory));
     const addresses = chip('目前結果的門牌', 'addresses', directoryMode === 'addresses', 'chip', openAddressDirectory);
     addresses.disabled = !complete; nav.append(addresses); return nav;
   }
@@ -533,7 +536,7 @@
     const countyId = $('directoryCounty')?.value || 'ALL';
     const buildings = (catalog.named_buildings || []).filter(item => countyId === 'ALL' || item.county_id === countyId);
     const matches = Core.findNamedBuildings(buildings, $('directorySearch').value);
-    list.replaceChildren(element('p', 'search-hint', `找到 ${matches.length} 棟 · 名稱清冊不套用企業篩選條件`));
+    list.replaceChildren(element('p', 'search-hint', `找到 ${matches.length} 個入口 · 不套用企業篩選條件`));
     matches.forEach(building => list.append(namedBuildingEntry(building)));
     if (!matches.length) {
       list.append(element('p', 'empty-state', buildings.length ? '這個名稱尚未收錄。可改用街道門牌查詢；零筆不代表大樓或企業不存在。' : '本縣市的大樓名稱仍待核對；已收錄的企業與門牌仍可搜尋。'));
@@ -546,13 +549,15 @@
     if (!catalog) return;
     directoryMode = 'names'; clearTimeout(directoryTimer);
     setText('bldModalTitle', '找大樓 · 全台縣市');
-    setText('bldModalSubtitle', `分批核對中：${catalog.named_buildings?.length || 0} 棟名稱，更新 ${catalog.building_names_updated_at || '未提供'}。選大樓會切換地區、保留資本額並清除其他企業條件；僅比對列出的門牌。`);
+    const entries = catalog.named_buildings || [], addressOnly = entries.filter(item => item.name_status === 'address_only').length;
+    setText('bldModalSubtitle', `首批 ${entries.length - addressOnly} 棟已核對名稱${addressOnly ? `、${addressOnly} 個僅核對門牌` : ''}，更新 ${catalog.building_names_updated_at || '未提供'}。選取後切換地區、保留資本額並清除其他企業條件；僅比對列出的門牌。`);
     const countySelect = element('select', 'industry-select'); countySelect.id = 'directoryCounty'; countySelect.setAttribute('aria-label', '選擇大樓所在縣市');
     const option = (value, text) => { const node = element('option', '', text); node.value = value; return node; };
-    countySelect.append(option('ALL', '全台縣市 · 已核對名稱'));
+    countySelect.append(option('ALL', '全台縣市 · 名稱與門牌'));
     for (const [id, county] of Object.entries(counties)) {
-      const count = (catalog.named_buildings || []).filter(item => item.county_id === id).length;
-      countySelect.append(option(id, `${county.name} · ${count ? `${count} 棟已核對` : '名稱待核對，可查企業門牌'}`));
+      const local = entries.filter(item => item.county_id === id), doors = local.filter(item => item.name_status === 'address_only').length;
+      const names = local.length - doors;
+      countySelect.append(option(id, `${county.name} · ${names ? `${names} 棟名稱已核對` : ''}${names && doors ? '、' : ''}${doors ? `${doors} 個門牌已核對，名稱待查` : ''}${local.length ? '' : '名稱待核對，可查企業門牌'}`));
     }
     countySelect.addEventListener('change', renderNamedDirectory);
     const search = element('input', 'directory-search'); search.type = 'search'; search.id = 'directorySearch';

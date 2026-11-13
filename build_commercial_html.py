@@ -322,6 +322,12 @@ def attach_named_buildings(catalog, config, data_dir):
     for building in config['buildings']:
         county = catalog['counties'].get(building['county_id'])
         addresses = building['addresses']
+        name_status = building.get('name_status', 'verified')
+        if name_status not in ('verified', 'address_only'):
+            raise ValueError('Unknown building-name verification status')
+        if name_status == 'address_only' and (building['aliases'] or len(addresses) != 1
+                or building['name'] != addresses[0].removeprefix(COUNTIES[building['county_id']] + building['district'])):
+            raise ValueError('Address-only entries must use the door text without invented names or aliases')
         if (not county or building['id'] in seen_ids or not building['name'].strip()
                 or not addresses or not building.get('references') or not building.get('checked_at')
                 or building['district'] not in {d['name'] for d in county['districts']}):

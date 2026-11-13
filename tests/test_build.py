@@ -114,6 +114,11 @@ class OfficialDataTests(unittest.TestCase):
         config = json.loads((ROOT/'config/named_buildings.json').read_text(encoding='utf-8'))
         self.assertEqual(len(catalog['named_buildings']), len(config['buildings']))
         self.assertEqual(catalog['building_name_sources'], config['sources'])
+        self.assertEqual({b['county_id'] for b in catalog['named_buildings']}, set(catalog['counties']), 'every county has a first verified door entry')
+        door_only = [b for b in catalog['named_buildings'] if b.get('name_status') == 'address_only']
+        self.assertEqual([b['county_id'] for b in door_only], ['lienchiang'])
+        self.assertEqual(door_only[0]['name'], '馬祖村8號')
+        self.assertEqual(door_only[0]['aliases'], [])
         counts = Counter(base_building_address(row[0]) for county in catalog['counties'].values() for shard in county['shards']
             for row in json.loads((ROOT/'data'/shard['path']).read_text(encoding='utf-8'))['rows'])
         for building, original in zip(catalog['named_buildings'], config['buildings']):
@@ -133,7 +138,7 @@ class OfficialDataTests(unittest.TestCase):
     def test_invalid_named_building_associations_stop_publication(self):
         catalog = json.loads((ROOT/'data/catalog.json').read_text(encoding='utf-8'))
         original = json.loads((ROOT/'config/named_buildings.json').read_text(encoding='utf-8'))
-        for failure in ('duplicate', 'floor', 'county', 'source'):
+        for failure in ('duplicate', 'floor', 'county', 'source', 'fake_name'):
             config = json.loads(json.dumps(original))
             if failure == 'duplicate':
                 config['buildings'].append(config['buildings'][0])
@@ -141,6 +146,8 @@ class OfficialDataTests(unittest.TestCase):
                 config['buildings'][0]['addresses'][0] += '8樓'
             elif failure == 'county':
                 config['buildings'][0]['county_id'] = 'taipei'
+            elif failure == 'fake_name':
+                config['buildings'][0]['name_status'] = 'address_only'
             else:
                 config['buildings'][0]['references'][0]['source_id'] = 'missing'
             with self.subTest(failure=failure), self.assertRaises(ValueError):
